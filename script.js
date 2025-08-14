@@ -5,17 +5,21 @@ const resetBtn = document.getElementById('reset-btn');
 const generateBtn = document.getElementById('generate-btn');
 const copyBtn = document.getElementById('copy-btn');
 const previewIframe = document.getElementById('preview-iframe');
+const toggleDebugAreas = document.getElementById('toggle-debug-areas');
 const codeOutput = document.getElementById('code-output');
 const imageMapSection = document.getElementById('image-map-section');
 const mapperImage = document.getElementById('mapper-image');
 const canvasContainer = document.getElementById('canvas-container');
 const selectionBox = document.getElementById('selection-box');
 const coordsInfo = document.getElementById('coords-info');
+const applyAreaBtn = document.getElementById('apply-area-btn');
+const cancelAreaBtn = document.getElementById('cancel-area-btn');
 
 let imageCounter = 0;
 let isFirstClick = true;
 let activeMappingInfo = null;
 let firstClickCoords = null;
+let dragState = null; // {mode: 'move'|'resize', startX, startY, startRect, dir}
 
 // 앱 초기화 함수
 function initializeApp() {
@@ -166,10 +170,18 @@ function handleUrlInput(e) {
 // 영역 설정 이미지 로드 완료 핸들러
 mapperImage.onload = () => {
     if (!activeMappingInfo) return;
-    coordsInfo.textContent = '버튼의 왼쪽 상단을 클릭하세요.';
-    isFirstClick = true;
+    coordsInfo.textContent = '박스를 드래그해 위치를 잡고, 모서리로 크기를 조절하세요. 적용을 눌러 저장합니다.';
+    isFirstClick = true; // deprecated but kept for minimal changes
     firstClickCoords = null;
-    selectionBox.style.display = 'none';
+    // 초기 박스를 이미지의 중앙 40% 크기로 표시
+    const rect = mapperImage.getBoundingClientRect();
+    const initWidth = rect.width * 0.4;
+    const initHeight = rect.height * 0.2;
+    const initLeft = (rect.width - initWidth) / 2;
+    const initTop = (rect.height - initHeight) / 2;
+    Object.assign(selectionBox.style, {
+        display: 'block', left: `${initLeft}px`, top: `${initTop}px`, width: `${initWidth}px`, height: `${initHeight}px`
+    });
     window.scrollTo({ top: imageMapSection.offsetTop, behavior: 'smooth' });
 };
 
@@ -181,59 +193,105 @@ mapperImage.onerror = () => {
 };
 
 // 영역 지정(클릭) 이벤트 핸들러
-canvasContainer.addEventListener('click', (e) => {
+// 드래그로 박스 이동/리사이즈
+function getBoxRect() {
+    return {
+        left: parseFloat(selectionBox.style.left || '0'),
+        top: parseFloat(selectionBox.style.top || '0'),
+        width: parseFloat(selectionBox.style.width || '0'),
+        height: parseFloat(selectionBox.style.height || '0')
+    };
+}
+
+function clampBox(rectPx) {
+    const imgRect = mapperImage.getBoundingClientRect();
+    const maxLeft = imgRect.width - rectPx.width;
+    const maxTop = imgRect.height - rectPx.height;
+    rectPx.left = Math.max(0, Math.min(rectPx.left, Math.max(0, maxLeft)));
+    rectPx.top = Math.max(0, Math.min(rectPx.top, Math.max(0, maxTop)));
+    rectPx.width = Math.max(1, Math.min(rectPx.width, imgRect.width - rectPx.left));
+    rectPx.height = Math.max(1, Math.min(rectPx.height, imgRect.height - rectPx.top));
+    return rectPx;
+}
+
+canvasContainer.addEventListener('mousedown', (e) => {
     if (!activeMappingInfo) return;
-
-    const rect = mapperImage.getBoundingClientRect();
-    const scaleX = mapperImage.naturalWidth / rect.width;
-    const scaleY = mapperImage.naturalHeight / rect.height;
-    const x = Math.round((e.clientX - rect.left) * scaleX);
-    const y = Math.round((e.clientY - rect.top) * scaleY);
-
-    if (isFirstClick) {
-        firstClickCoords = { x, y };
-        isFirstClick = false;
-        coordsInfo.textContent = `시작: (${x}, ${y}). 이제 오른쪽 하단을 클릭하세요.`;
-        selectionBox.style.left = `${(e.clientX - rect.left)}px`;
-        selectionBox.style.top = `${(e.clientY - rect.top)}px`;
-        selectionBox.style.width = '0px';
-        selectionBox.style.height = '0px';
-        selectionBox.style.display = 'block';
+    const target = e.target;
+    const imgRect = mapperImage.getBoundingClientRect();
+    const startX = e.clientX; const startY = e.clientY;
+    const startRect = getBoxRect();
+    if (target.classList.contains('handle')) {
+        dragState = { mode: 'resize', dir: target.dataset.dir, startX, startY, startRect };
     } else {
-        const x1 = Math.min(firstClickCoords.x, x);
-        const y1 = Math.min(firstClickCoords.y, y);
-        const x2 = Math.max(firstClickCoords.x, x);
-        const y2 = Math.max(firstClickCoords.y, y);
-        const imgWidth = mapperImage.naturalWidth;
-        const imgHeight = mapperImage.naturalHeight;
-
-        if (imgWidth === 0 || imgHeight === 0) {
-            alert("이미지 크기를 가져올 수 없습니다.");
-            return;
-        }
-
-        const coords = {
-            left: ((x1 / imgWidth) * 100).toFixed(2),
-            bottom: (((imgHeight - y2) / imgHeight) * 100).toFixed(2),
-            width: (((x2 - x1) / imgWidth) * 100).toFixed(2),
-            height: (((y2 - y1) / imgHeight) * 100).toFixed(2)
-        };
-        
-        const { row, buttonIndex } = activeMappingInfo;
-        const buttons = JSON.parse(row.dataset.buttons);
-        buttons[buttonIndex].coords = coords;
-        row.dataset.buttons = JSON.stringify(buttons);
-        
-        const setAreaBtn = row.querySelectorAll('.set-area-btn')[buttonIndex];
-        setAreaBtn.textContent = '✅ 영역 설정 완료';
-        setAreaBtn.classList.replace('bg-indigo-500', 'bg-green-500');
-        setAreaBtn.classList.replace('hover:bg-indigo-600', 'hover:bg-green-600');
-
-        imageMapSection.classList.add('hidden');
-        activeMappingInfo = null;
-        firstClickCoords = null;
-        isFirstClick = true;
+        // 이동 모드 (selectionBox 또는 이미지 영역 클릭)
+        dragState = { mode: 'move', startX, startY, startRect };
     }
+    canvasContainer.classList.add('dragging');
+    e.preventDefault();
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!dragState || !activeMappingInfo) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    let r = { ...dragState.startRect };
+    if (dragState.mode === 'move') {
+        r.left += dx; r.top += dy;
+    } else if (dragState.mode === 'resize') {
+        const dir = dragState.dir;
+        if (dir.includes('e')) r.width += dx;
+        if (dir.includes('s')) r.height += dy;
+        if (dir.includes('w')) { r.left += dx; r.width -= dx; }
+        if (dir.includes('n')) { r.top += dy; r.height -= dy; }
+    }
+    r = clampBox(r);
+    Object.assign(selectionBox.style, {
+        left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`
+    });
+});
+
+window.addEventListener('mouseup', () => {
+    if (!dragState) return;
+    dragState = null;
+    canvasContainer.classList.remove('dragging');
+});
+
+function saveSelectionToRow() {
+    const rect = mapperImage.getBoundingClientRect();
+    const imgW = mapperImage.naturalWidth; const imgH = mapperImage.naturalHeight;
+    const scaleX = imgW / rect.width; const scaleY = imgH / rect.height;
+    const px = getBoxRect();
+    const x1 = px.left * scaleX;
+    const y1 = px.top * scaleY;
+    const x2 = (px.left + px.width) * scaleX;
+    const y2 = (px.top + px.height) * scaleY;
+
+    const coords = {
+        left: ((x1 / imgW) * 100).toFixed(2),
+        bottom: (((imgH - y2) / imgH) * 100).toFixed(2),
+        width: (((x2 - x1) / imgW) * 100).toFixed(2),
+        height: (((y2 - y1) / imgH) * 100).toFixed(2)
+    };
+    const { row, buttonIndex } = activeMappingInfo;
+    const buttons = JSON.parse(row.dataset.buttons);
+    buttons[buttonIndex].coords = coords;
+    row.dataset.buttons = JSON.stringify(buttons);
+    const setAreaBtn = row.querySelectorAll('.set-area-btn')[buttonIndex];
+    setAreaBtn.textContent = '✅ 영역 설정 완료';
+    setAreaBtn.classList.replace('bg-indigo-500', 'bg-green-500');
+    setAreaBtn.classList.replace('hover:bg-indigo-600', 'hover:bg-green-600');
+}
+
+applyAreaBtn.addEventListener('click', () => {
+    if (!activeMappingInfo) return;
+    saveSelectionToRow();
+    imageMapSection.classList.add('hidden');
+    activeMappingInfo = null;
+});
+
+cancelAreaBtn.addEventListener('click', () => {
+    imageMapSection.classList.add('hidden');
+    activeMappingInfo = null;
 });
 
 // 코드 생성 함수
@@ -273,7 +331,7 @@ function generateCode() {
             buttons.forEach((btn, index) => {
                 const configRow = buttonConfigRows[index];
                 const buttonType = configRow.querySelector('.button-type').value;
-                const style = `position: absolute; bottom: ${btn.coords.bottom}%; left: ${btn.coords.left}%; width: ${btn.coords.width}%; height: ${btn.coords.height}%; text-indent: -9999px; font-size: 0`;
+                const style = `position: absolute; bottom: ${btn.coords.bottom}%; left: ${btn.coords.left}%; width: ${btn.coords.width}%; height: ${btn.coords.height}%; text-indent: -9999px; font-size: 0${toggleDebugAreas?.checked ? '; outline: 2px dashed rgba(220,38,38,.9); background: rgba(220,38,38,.2)' : ''}`;
                 let buttonTag = '';
                 if (buttonType === 'booking') {
                     const airlineCode = configRow.querySelector('.airline-code').value;
