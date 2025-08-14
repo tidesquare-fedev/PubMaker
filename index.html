@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로모션 퍼블 생성</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pretendard 웹폰트 로드 -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- 외부 스타일시트 연결 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">프로모션 퍼블 자동 생성기</h1>
+            <p class="text-md text-gray-600 mt-2">PC/모바일 플랫폼과 버튼 종류를 선택하여 코드를 만드세요.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: Inputs -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-4">
+                     <h2 class="text-2xl font-semibold">1. 설정</h2>
+                     <button id="reset-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">초기화</button>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800">플랫폼 선택</h3>
+                    <div id="platform-selector" class="flex items-center space-x-2">
+                        <input type="radio" name="platform" id="platform-pc" value="pc" class="hidden" checked>
+                        <label for="platform-pc" class="platform-label">💻 PC</label>
+                        <input type="radio" name="platform" id="platform-mo" value="mo" class="hidden">
+                        <label for="platform-mo" class="platform-label">📱 모바일</label>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-2 text-gray-800">이미지 정보 입력</h3>
+                <div id="image-list" class="space-y-4 mb-4">
+                    <!-- Image input rows will be added by script.js -->
+                </div>
+                <button id="add-image-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                    이미지 추가하기
+                </button>
+
+                <div id="image-map-section" class="mt-6 hidden">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">2. 버튼 영역 설정</h2>
+                    <p class="text-gray-600 mb-2">아래 이미지에서 버튼의 <b class="text-blue-600">왼쪽 상단</b>과 <b class="text-blue-600">오른쪽 하단</b>을 차례대로 클릭하여 영역을 지정해주세요.</p>
+                    <div id="canvas-container" class="canvas-container rounded-lg overflow-hidden">
+                        <img id="mapper-image" src="" alt="Image for mapping" class="max-w-full h-auto block" />
+                        <div id="selection-box"></div>
+                    </div>
+                     <p id="coords-info" class="text-center text-sm text-gray-500 mt-2 font-mono"></p>
+                </div>
+
+                 <div class="mt-8">
+                    <button id="generate-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-300">
+                        🚀 코드 생성하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Output -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">3. 결과 확인</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">미리보기</h3>
+                        <div class="bg-gray-100 p-2 rounded-lg">
+                           <iframe id="preview-iframe" class="rounded-md" title="Preview"></iframe>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                             <h3 class="text-xl font-semibold">생성된 코드</h3>
+                             <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">복사</button>
+                        </div>
+                        <textarea id="code-output" class="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-900 text-green-400 font-mono text-sm" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 외부 스크립트 연결, defer 속성으로 HTML 파싱 후 실행 -->
+    <script src="script.js" defer></script>
+</body>
+</html>
