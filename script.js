@@ -202,12 +202,18 @@ function handleSetAreaClick(e) {
     const imageUrl = imageRow.querySelector('.image-url').value.trim();
 
     if (imageUrl) {
+        // http/https만 허용
+        if (!/^https?:\/\//i.test(imageUrl)) {
+            alert('유효한 이미지 URL이 아닙니다. https:// 로 시작하는 경로를 입력해주세요.');
+            return;
+        }
         activeMappingInfo = { row: imageRow, buttonIndex: buttonIndex };
-        mapperImage.crossOrigin = "anonymous";
-        mapperImage.src = imageUrl;
-        
+        try { mapperImage.removeAttribute('crossorigin'); } catch(_) {}
         imageMapSection.classList.remove('hidden');
         coordsInfo.textContent = '이미지 로딩 중...';
+        // 캐시 버스트로 강제 로드
+        const bust = (imageUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+        mapperImage.src = imageUrl + bust;
     } else {
         alert('버튼 영역을 설정하려면 먼저 이미지 URL을 입력해주세요.');
     }
@@ -275,10 +281,10 @@ let lastImageErrorUrl = null;
 mapperImage.onerror = () => {
     const failedUrl = mapperImage.src;
     if (lastImageErrorUrl !== failedUrl) {
-        coordsInfo.textContent = '이미지를 불러올 수 없습니다. CORS 문제일 수 있습니다. 다른 호스팅(예: postimages.org)으로 업로드 후 다시 시도해 주세요.';
+        coordsInfo.textContent = '이미지를 불러올 수 없습니다. CORS/URL 문제일 수 있습니다. 이미지 직접 링크(JPG/PNG 등)인지 확인하거나, 다른 호스팅(예: postimages.org)으로 업로드 후 다시 시도해 주세요.';
         lastImageErrorUrl = failedUrl;
     }
-    imageMapSection.classList.add('hidden');
+    selectionBox.style.display = 'none';
     activeMappingInfo = null;
 };
 
