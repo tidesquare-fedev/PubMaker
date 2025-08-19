@@ -100,9 +100,10 @@ input[type="radio"]:checked + .platform-label {
 /* Benefia specific styles */
 #benefia-preview {
     min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
+    text-align: left;
+    line-height: 0;
+    padding: 0;
 }
 
 #benefia-image-list .benefia-img-item {
@@ -127,17 +128,25 @@ input[type="radio"]:checked + .platform-label {
     max-width: 100%;
     height: auto;
     display: block;
+    margin: 0;
+    border: 0;
+}
+
+/* Ensure stacked images have no gaps and align left */
+#benefia-preview > div {
+    margin: 0;
+    padding: 0;
 }
 
 /* Benefia anchor pin */
 .benefia-anchor-pin {
     position: absolute;
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
     border-radius: 9999px;
-    background: radial-gradient(circle at 35% 35%, #faf5ff 0%, #a78bfa 50%, #6d28d9 100%);
+    background: radial-gradient(circle at 35% 35%, #ffe5e5 0%, #ef4444 55%, #b91c1c 100%);
     border: 3px solid #ffffff;
-    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.45), 0 4px 10px rgba(0,0,0,.35);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.45), 0 6px 12px rgba(0,0,0,.35);
     cursor: grab;
     z-index: 9999;
     animation: anchorPulse 1.5s ease-out infinite;
@@ -145,9 +154,9 @@ input[type="radio"]:checked + .platform-label {
 .benefia-anchor-pin:active { cursor: grabbing; }
 
 @keyframes anchorPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.45), 0 4px 10px rgba(0,0,0,.35); }
-    70%  { box-shadow: 0 0 0 12px rgba(167, 139, 250, 0),    0 4px 10px rgba(0,0,0,.35); }
-    100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0),      0 4px 10px rgba(0,0,0,.35); }
+    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45), 0 6px 12px rgba(0,0,0,.35); }
+    70%  { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0),    0 6px 12px rgba(0,0,0,.35); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0),      0 6px 12px rgba(0,0,0,.35); }
 }
 
 /* Anchor rectangle (target area) */
