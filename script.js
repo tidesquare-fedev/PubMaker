@@ -1234,110 +1234,68 @@ function initializeBenefiaTab() {
         });
     }
 
-    // Generate Benefia code
+    // Generate Benefia code (percent-based absolute anchors, no image map)
     function generateBenefiaCode() {
         if (!imageListState.length) { benefiaCodeOutput.value = ''; return; }
 
+        const toPctRect = (area, nW, nH) => {
+            if (area.coordsPct) {
+                return {
+                    left: (area.coordsPct.x1 * 100).toFixed(2),
+                    top: (area.coordsPct.y1 * 100).toFixed(2),
+                    width: ((area.coordsPct.x2 - area.coordsPct.x1) * 100).toFixed(2),
+                    height: ((area.coordsPct.y2 - area.coordsPct.y1) * 100).toFixed(2),
+                };
+            }
+            if (area.coords && nW && nH) {
+                const { x1, y1, x2, y2 } = area.coords;
+                return {
+                    left: (x1 / nW * 100).toFixed(2),
+                    top: (y1 / nH * 100).toFixed(2),
+                    width: ((x2 - x1) / nW * 100).toFixed(2),
+                    height: ((y2 - y1) / nH * 100).toFixed(2),
+                };
+            }
+            return { left: '0', top: '0', width: '0', height: '0' };
+        };
+
         const blocks = imageListState.filter(it => it.url).map((item) => {
-            const mapId = `map_${item.id}`;
             const nW = item.naturalW || 0;
             const nH = item.naturalH || 0;
-            const buildCoords = (area) => {
-                if (area.coordsPct && nW && nH) {
-                    const sx1 = Math.round(area.coordsPct.x1 * nW);
-                    const sy1 = Math.round(area.coordsPct.y1 * nH);
-                    const sx2 = Math.round(area.coordsPct.x2 * nW);
-                    const sy2 = Math.round(area.coordsPct.y2 * nH);
-                    return [sx1, sy1, sx2, sy2].join(',');
-                }
-                if (area.coords) {
-                    const { x1, y1, x2, y2 } = area.coords;
-                    return [Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2)].join(',');
-                }
-                return '0,0,0,0';
-            };
 
-            const areaCode = (item.areas || []).map(area => {
-                const coords = buildCoords(area);
+            const overlayCode = (item.areas || []).map(area => {
+                const r = toPctRect(area, nW, nH);
+                const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px;`;
                 if (area.type === 'coupon' && area.couponIds) {
-                    const couponIds = area.couponIds.split(',').map(id => id.trim()).join(',');
-                    return `        <area alt="${area.alt || '쿠폰 받기'}" href="javascript:void(0)" data-coupons="${couponIds}" coords="${coords}" shape="rect" style="cursor: pointer;">`;
+                    const ids = area.couponIds.split(',').map(id => `'${id.trim()}'`).filter(Boolean).join(', ');
+                    return `      <a href="javascript:void(0)" onclick="couponDownloadAll([${ids}]); return false;" style="${style}"></a>`;
                 } else if (area.type === 'anchor') {
-                    return `        <area alt="${area.alt || '이동'}" href="${area.href || '#'}" coords="${coords}" shape="rect" style="cursor: pointer;">`;
+                    return `      <a href="${area.href || '#'}" style="${style}"></a>`;
                 } else {
                     const target = area.target ? ` target="${area.target}"` : '';
-                    return `        <area alt="${area.alt || '링크'}" href="${area.href || '#'}"${target} coords="${coords}" shape="rect" style="cursor: pointer;">`;
+                    return `      <a href="${area.href || '#'}"${target} style="${style}"></a>`;
                 }
             }).join('\n');
 
             const anchorCode = (item.anchors || []).map(a => {
-                let ax = 0, ay = 0;
-                if (typeof a.xp === 'number' && typeof a.yp === 'number' && nW && nH) {
-                    ax = Math.round(a.xp * nW);
-                    ay = Math.round(a.yp * nH);
-                } else {
-                    ax = Math.round(a.x || 0);
-                    ay = Math.round(a.y || 0);
-                }
-                return `            <div id="${a.id}" style="position:absolute; left:${ax}px; top:${ay}px; width:1px; height:1px; overflow:hidden;">&nbsp;</div>`;
+                const left = typeof a.xp === 'number' ? (a.xp * 100).toFixed(2) : '0';
+                const top = typeof a.yp === 'number' ? (a.yp * 100).toFixed(2) : '0';
+                return `      <div id="${a.id}" style="position:absolute; left:${left}%; top:${top}%; width:1px; height:1px; overflow:hidden;">&nbsp;</div>`;
             }).join('\n');
 
             return `
 <div class="content">
   <div style="text-align: center;">
     <div style="position:relative; max-width: 1180px; margin: 0 auto;">
-      <img src="${item.url}" style="border:0; max-width: 100%;" usemap="#${mapId}">
-      <map name="${mapId}">
-${areaCode}
-      </map>
-${anchorCode ? anchorCode + '\n' : ''}
+      <img src="${item.url}" style="border:0; max-width: 100%; display:block;">
+${overlayCode}
+${anchorCode}
     </div>
   </div>
 </div>`;
         }).join('\n\n');
 
-        const script = `
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.rwdImageMaps/1.6/jquery.rwdImageMaps.min.js"></script>
-<script>
-(function($){
-  $(function(){
-    $('img[usemap]').rwdImageMaps();
-    // 앵커(#) 스크롤 이동
-    $(document).on('click', 'area[href^="#"]', function(e){
-      var href = $(this).attr('href');
-      if(!href || href === '#') return;
-      var $target = $(href);
-      if($target.length){
-        e.preventDefault();
-        var $from = $(this);
-        var $container = $from.closest('.event-wrap, .new-pb-container, .page_wrap, .middle_zone, body');
-        var isDoc = $container.is('body');
-        var top = $target.offset().top;
-        if(isDoc){ $('html, body').animate({ scrollTop: top }, 400); }
-        else {
-          var cTop = $container.offset().top;
-          var current = $container.scrollTop();
-          $container.animate({ scrollTop: current + (top - cTop) }, 400);
-        }
-      }
-    });
-    // 쿠폰 다운로드(인라인 onclick 제거 대체)
-    $(document).on('click', 'area[data-coupons]', function(e){
-      e.preventDefault();
-      var raw = $(this).data('coupons')+'';
-      var ids = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-      if (typeof window.couponDownloadAll === 'function') {
-        window.couponDownloadAll(ids);
-      } else {
-        console.warn('couponDownloadAll 함수가 정의되지 않았습니다.', ids);
-      }
-    });
-  });
-})(jQuery);
-</script>`;
-
-        benefiaCodeOutput.value = (blocks + '\n\n' + script).trim();
+        benefiaCodeOutput.value = blocks.trim();
     }
 
     // Render image rows UI (투어비스와 유사한 행 기반)
