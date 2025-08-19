@@ -474,10 +474,10 @@ ${bodyContent.trimEnd()}
     // 미리보기 전용: 디버그가 켜져 있으면 스타일 주입
     let previewHtml = fullHtml;
     if (toggleDebugAreas?.checked) {
-        const debugStyle = `\n<style> body{margin:0;} [data-map-anchor]{outline:2px dashed rgba(220,38,38,.9); background: rgba(220,38,38,.2);} </style>\n`;
+        const debugStyle = `\n<style> html,body{margin:0;padding:0;} .new-pb-container,.event-wrap{line-height:0;font-size:0} .new-pb-container img{display:block;width:100%;height:auto;border:0} [data-map-anchor]{outline:2px dashed rgba(220,38,38,.9); background: rgba(220,38,38,.2);} </style>\n`;
         previewHtml = fullHtml.replace('</head>', `${debugStyle}</head>`);
     } else {
-        const baseStyle = `\n<style> body{margin:0;} </style>\n`;
+        const baseStyle = `\n<style> html,body{margin:0;padding:0;} .new-pb-container,.event-wrap{line-height:0;font-size:0} .new-pb-container img{display:block;width:100%;height:auto;border:0} </style>\n`;
         previewHtml = fullHtml.replace('</head>', `${baseStyle}</head>`);
     }
     previewIframe.srcdoc = previewHtml;
@@ -536,10 +536,10 @@ ${bodyContent.trimEnd()}
 </html>`;
     let previewHtml = fullHtml;
     if (toggleDebugAreas?.checked) {
-        const debugStyle = `\n<style> body{margin:0;} [data-map-anchor]{outline:2px dashed rgba(220,38,38,.9); background: rgba(220,38,38,.2);} </style>\n`;
+        const debugStyle = `\n<style> html,body{margin:0;padding:0;} .new-pb-container,.event-wrap{line-height:0;font-size:0} .new-pb-container img{display:block;width:100%;height:auto;border:0} [data-map-anchor]{outline:2px dashed rgba(220,38,38,.9); background: rgba(220,38,38,.2);} </style>\n`;
         previewHtml = fullHtml.replace('</head>', `${debugStyle}</head>`);
     } else {
-        const baseStyle = `\n<style> body{margin:0;} </style>\n`;
+        const baseStyle = `\n<style> html,body{margin:0;padding:0;} .new-pb-container,.event-wrap{line-height:0;font-size:0} .new-pb-container img{display:block;width:100%;height:auto;border:0} </style>\n`;
         previewHtml = fullHtml.replace('</head>', `${baseStyle}</head>`);
     }
     previewIframe.srcdoc = previewHtml;
@@ -556,10 +556,12 @@ function bindIframeAutoHeight() {
             previewIframe.style.transform = 'none';
         } catch (_) {}
     };
-    // 초기 3회 정도 재계산 (이미지 로딩 시점 보정)
+    // 초기 여러 회 재계산 (이미지 로딩 시점 보정)
     setTimeout(recalc, 30);
     setTimeout(recalc, 120);
     setTimeout(recalc, 300);
+    const tick = setInterval(recalc, 400);
+    setTimeout(() => clearInterval(tick), 2500);
     const doc = previewIframe.contentDocument;
     if (!doc) return;
     // 이미지 로드/에러 시 재계산
