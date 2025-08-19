@@ -17,84 +17,156 @@
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">프로모션 퍼블 자동 생성기</h1>
             <p class="text-md text-gray-600 mt-2">PC/모바일 플랫폼과 버튼 종류를 선택하여 코드를 만드세요.</p>
+            
+            <!-- Tab Navigation -->
+            <div class="flex justify-center mt-6 mb-8 border-b border-gray-200">
+                <button class="tab-btn active px-6 py-3 font-medium text-sm rounded-t-lg" data-tab="tourism">투어비스(항공일반)</button>
+                <button class="tab-btn px-6 py-3 font-medium text-sm rounded-t-lg text-gray-500 hover:text-gray-700" data-tab="benefia">베네피아/휴가샵</button>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Panel: Inputs -->
-            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                <div class="flex justify-between items-center mb-4 border-b pb-4">
-                     <h2 class="text-2xl font-semibold">1. 설정</h2>
-                     <button id="reset-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">초기화</button>
-                </div>
-                
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-800">플랫폼 선택</h3>
-                    <div id="platform-selector" class="flex items-center space-x-2">
-                        <input type="radio" name="platform" id="platform-pc" value="pc" class="hidden" checked>
-                        <label for="platform-pc" class="platform-label">💻 PC</label>
-                        <input type="radio" name="platform" id="platform-mo" value="mo" class="hidden">
-                        <label for="platform-mo" class="platform-label">📱 모바일</label>
+        <!-- Tourism Tab Content -->
+        <div id="tourism-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Panel: Inputs -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex justify-between items-center mb-4 border-b pb-4">
+                         <h2 class="text-2xl font-semibold">1. 설정</h2>
+                         <button id="reset-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">초기화</button>
                     </div>
-                </div>
-
-                <h3 class="text-lg font-semibold mb-2 text-gray-800">이미지 정보 입력</h3>
-                <div id="image-list" class="space-y-4 mb-4">
-                    <!-- Image input rows will be added by script.js -->
-                </div>
-                <button id="add-image-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
-                    이미지 추가하기
-                </button>
-
-                <div id="image-map-section" class="mt-6 hidden">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">2. 버튼 영역 설정</h2>
-                    <p class="text-gray-600 mb-2">아래 이미지에서 버튼의 <b class="text-blue-600">왼쪽 상단</b>과 <b class="text-blue-600">오른쪽 하단</b>을 차례대로 클릭하여 영역을 지정해주세요.</p>
-                    <div id="canvas-container" class="canvas-container rounded-lg overflow-hidden">
-                        <img id="mapper-image" src="" alt="Image for mapping" class="max-w-full h-auto block" />
-                        <div id="selection-box">
-                            <div class="handle nw" data-dir="nw"></div>
-                            <div class="handle n" data-dir="n"></div>
-                            <div class="handle ne" data-dir="ne"></div>
-                            <div class="handle e" data-dir="e"></div>
-                            <div class="handle se" data-dir="se"></div>
-                            <div class="handle s" data-dir="s"></div>
-                            <div class="handle sw" data-dir="sw"></div>
-                            <div class="handle w" data-dir="w"></div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-2 text-gray-800">플랫폼 선택</h3>
+                        <div id="platform-selector" class="flex items-center space-x-2">
+                            <input type="radio" name="platform" id="platform-pc" value="pc" class="hidden" checked>
+                            <label for="platform-pc" class="platform-label">💻 PC</label>
+                            <input type="radio" name="platform" id="platform-mo" value="mo" class="hidden">
+                            <label for="platform-mo" class="platform-label">📱 모바일</label>
                         </div>
                     </div>
-                     <p id="coords-info" class="text-center text-sm text-gray-500 mt-2 font-mono"></p>
-                     <div class="flex justify-center gap-3 mt-3">
-                        <button id="apply-area-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded">적용</button>
-                        <button id="cancel-area-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded">취소</button>
-                     </div>
+
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800">이미지 정보 입력</h3>
+                    <div id="image-list" class="space-y-4 mb-4">
+                        <!-- Image input rows will be added by script.js -->
+                    </div>
+                    <button id="add-image-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                        이미지 추가하기
+                    </button>
+
+                    <div id="image-map-section" class="mt-6 hidden">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-2">2. 버튼 영역 설정</h2>
+                        <p class="text-gray-600 mb-2">아래 이미지에서 버튼의 <b class="text-blue-600">왼쪽 상단</b>과 <b class="text-blue-600">오른쪽 하단</b>을 차례대로 클릭하여 영역을 지정해주세요.</p>
+                        <div id="canvas-container" class="canvas-container rounded-lg overflow-hidden">
+                            <img id="mapper-image" src="" alt="Image for mapping" class="max-w-full h-auto block" />
+                            <div id="selection-box">
+                                <div class="handle nw" data-dir="nw"></div>
+                                <div class="handle n" data-dir="n"></div>
+                                <div class="handle ne" data-dir="ne"></div>
+                                <div class="handle e" data-dir="e"></div>
+                                <div class="handle se" data-dir="se"></div>
+                                <div class="handle s" data-dir="s"></div>
+                                <div class="handle sw" data-dir="sw"></div>
+                                <div class="handle w" data-dir="w"></div>
+                            </div>
+                        </div>
+                         <p id="coords-info" class="text-center text-sm text-gray-500 mt-2 font-mono"></p>
+                         <div class="flex justify-center gap-3 mt-3">
+                            <button id="apply-area-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded">적용</button>
+                            <button id="cancel-area-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded">취소</button>
+                         </div>
+                    </div>
+
+                     <div class="mt-8">
+                        <button id="generate-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-300">
+                            🚀 코드 생성하기
+                        </button>
+                    </div>
                 </div>
 
-                 <div class="mt-8">
-                    <button id="generate-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-300">
-                        🚀 코드 생성하기
-                    </button>
+                <!-- Right Panel: Output -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">3. 결과 확인</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">미리보기</h3>
+                            <div class="flex items-center gap-2 mb-2">
+                               <input type="checkbox" id="toggle-debug-areas" class="w-4 h-4" checked>
+                               <label for="toggle-debug-areas" class="text-sm text-gray-600">버튼 영역 시각화</label>
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded-lg">
+                               <iframe id="preview-iframe" class="rounded-md" title="Preview"></iframe>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                 <h3 class="text-xl font-semibold">생성된 코드</h3>
+                                 <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">복사</button>
+                            </div>
+                            <textarea id="code-output" class="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-900 text-green-400 font-mono text-sm" readonly></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Right Panel: Output -->
+        <!-- Benefia Tab Content -->
+        <div id="benefia-tab" class="tab-content hidden">
             <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">3. 결과 확인</h2>
+                <div class="flex justify-between items-center mb-4 border-b pb-4">
+                    <h2 class="text-2xl font-semibold">베네피아/휴가샵 퍼블 생성기</h2>
+                    <button id="reset-benefia-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">초기화</button>
+                </div>
+                
                 <div class="space-y-6">
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">미리보기</h3>
-                        <div class="flex items-center gap-2 mb-2">
-                           <input type="checkbox" id="toggle-debug-areas" class="w-4 h-4" checked>
-                           <label for="toggle-debug-areas" class="text-sm text-gray-600">버튼 영역 시각화</label>
-                        </div>
-                        <div class="bg-gray-100 p-2 rounded-lg">
-                           <iframe id="preview-iframe" class="rounded-md" title="Preview"></iframe>
+                        <h3 class="text-lg font-semibold mb-2">이미지 목록</h3>
+                        <div id="benefia-image-list" class="space-y-2"></div>
+                        <button id="add-benefia-image" class="mt-2 w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg">+ 이미지 추가</button>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">이미지 URL</h3>
+                        <input type="text" id="benefia-image-url" placeholder="이미지 URL을 입력하세요" class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">이미지맵 영역 추가</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                                <button id="add-benefia-area-anchor" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">+ 앵커 이동</button>
+                                <button id="add-benefia-area-coupon" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">+ 쿠폰 다운로드</button>
+                                <button id="add-benefia-area-link" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">+ 링크</button>
+                                <button id="add-benefia-anchor" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">+ 앵커 추가</button>
+                            </div>
+                            <div id="benefia-areas" class="space-y-3">
+                                <!-- Areas will be added here -->
+                            </div>
                         </div>
                     </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">앵커 영역 설정</h3>
+                        <p class="text-sm text-gray-500 mb-2">앵커는 같은 페이지 내 이동 지점을 의미합니다. 아래 목록에서 추가 후 미리보기의 보라색 포인트를 드래그해 위치를 조정하세요.</p>
+                        <div id="benefia-anchors" class="space-y-3"><!-- Anchors list --></div>
+                        <button id="add-benefia-anchor" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg mt-2">+ 새 앵커 추가</button>
+                    </div>
+                    
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-2">미리보기</h3>
+                        <div id="benefia-preview" class="border border-gray-300 rounded-lg p-4 bg-white">
+                            <p class="text-gray-500 text-center py-8">이미지를 업로드하면 미리보기가 표시됩니다.</p>
+                        </div>
+                    </div>
+                    
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                             <h3 class="text-xl font-semibold">생성된 코드</h3>
-                             <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-lg text-sm transition-colors duration-300">복사</button>
+                            <h3 class="text-lg font-semibold">생성된 코드</h3>
+                            <div class="flex gap-2">
+                                <button id="generate-benefia-code" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">코드 생성</button>
+                                <button id="copy-benefia-code" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm">코드 복사</button>
+                            </div>
                         </div>
-                        <textarea id="code-output" class="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-900 text-green-400 font-mono text-sm" readonly></textarea>
+                        <textarea id="benefia-code-output" class="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-900 text-green-400 font-mono text-sm" readonly></textarea>
                     </div>
                 </div>
             </div>
