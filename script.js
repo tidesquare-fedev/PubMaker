@@ -585,5 +585,752 @@ copyBtn.addEventListener('click', () => {
     setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
 });
 
-// 앱 시작
-initializeApp();
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    initializeBenefiaTab();
+    setupTabSwitching();
+});
+
+// Tab switching functionality
+function setupTabSwitching() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-tab');
+            
+            // Update active tab button
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-500', 'hover:text-gray-700');
+                btn.classList.remove('text-blue-600');
+            });
+            button.classList.add('active', 'text-blue-600');
+            button.classList.remove('text-gray-500', 'hover:text-gray-700');
+            
+            // Show selected tab content
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        });
+    });
+}
+
+// Benefia Tab Functionality
+function initializeBenefiaTab() {
+    const benefiaImageUrl = document.getElementById('benefia-image-url');
+    const benefiaAreas = document.getElementById('benefia-areas');
+    const addAreaBtn = document.getElementById('add-benefia-area');
+    const benefiaPreview = document.getElementById('benefia-preview');
+    const benefiaCodeOutput = document.getElementById('benefia-code-output');
+    const copyBenefiaCodeBtn = document.getElementById('copy-benefia-code');
+    const generateBenefiaCodeBtn = document.getElementById('generate-benefia-code');
+    const resetBenefiaBtn = document.getElementById('reset-benefia-btn');
+    const benefiaAnchors = document.getElementById('benefia-anchors');
+    const addAnchorBtn = document.getElementById('add-benefia-anchor');
+    const addAreaAnchorBtn = document.getElementById('add-benefia-area-anchor');
+    const addAreaCouponBtn = document.getElementById('add-benefia-area-coupon');
+    const addAreaLinkBtn = document.getElementById('add-benefia-area-link');
+    const benefiaImageList = document.getElementById('benefia-image-list');
+    const addBenefiaImageBtn = document.getElementById('add-benefia-image');
+
+    let areas = [];
+    let anchors = [];
+    let imageUrl = '';
+    let imageListState = []; // [{id, url}]
+    let areaCounter = 0;
+    let isDrawing = false;
+    let startX, startY, currentArea = null;
+    let isDraggingArea = false;
+    let draggingAreaId = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let dragOrigW = 0;
+    let dragOrigH = 0;
+    let imageElement = null;
+    let imageRect = null;
+
+    // Create image preview container with selection functionality
+    function createImagePreview() {
+        benefiaPreview.innerHTML = `
+            <div class="relative w-full overflow-hidden" style="background: #f5f5f5;">
+                <div id="benefia-image-container" class="relative">
+                    ${imageUrl ? `<img id="benefia-image" src="${imageUrl}" alt="미리보기 이미지" class="max-w-full h-auto block">` : 
+                    '<p class="text-gray-500 text-center py-20">이미지 URL을 입력하세요</p>'}
+                    <div id="benefia-selection" class="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-30 pointer-events-none" style="display: none;"></div>
+                    ${areas.map((area, index) => {
+                        const { x1, y1, x2, y2 } = area.coords;
+                        const width = Math.abs(x2 - x1);
+                        const height = Math.abs(y2 - y1);
+                        const left = Math.min(x1, x2);
+                        const top = Math.min(y1, y2);
+                        const isAnchorArea = area.type === 'anchor' && area.href && area.href.startsWith('#');
+                        const cls = isAnchorArea ? 'benefia-anchor-box' : 'absolute border-2 border-red-500 bg-red-100 bg-opacity-30 flex items-center justify-center';
+                        const labelHtml = isAnchorArea ? `<span class=\"benefia-anchor-label\">ANCHOR</span>` : `<span class=\"bg-red-500 text-white text-xs px-1 rounded absolute -top-3 -left-px\">${index + 1}</span>`;
+                        return `<div class="${cls}" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;" data-area-id="${area.id}">${labelHtml}
+                            <div class=\"benefia-handle nw\" data-dir=\"nw\"></div>
+                            <div class=\"benefia-handle n\" data-dir=\"n\"></div>
+                            <div class=\"benefia-handle ne\" data-dir=\"ne\"></div>
+                            <div class=\"benefia-handle e\" data-dir=\"e\"></div>
+                            <div class=\"benefia-handle se\" data-dir=\"se\"></div>
+                            <div class=\"benefia-handle s\" data-dir=\"s\"></div>
+                            <div class=\"benefia-handle sw\" data-dir=\"sw\"></div>
+                            <div class=\"benefia-handle w\" data-dir=\"w\"></div>
+                            <button class="remove-area-btn absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" 
+                                    data-id="${area.id}">×</button>
+                        </div>`;
+                    }).join('')}
+                    ${anchors.map(a => {
+                        const left = Math.round(a.x);
+                        const top = Math.round(a.y);
+                        return `<div class="benefia-anchor-pin" data-anchor-id="${a.id}" style="left:${left}px; top:${top}px" title="${a.id}"></div>`;
+                    }).join('')}
+                </div>
+                <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs p-1 rounded">
+                    영역을 선택하려면 이미지 위에서 드래그하세요
+                </div>
+            </div>
+        `;
+
+        // Get the image element and container
+        imageElement = document.getElementById('benefia-image');
+        const container = document.getElementById('benefia-image-container');
+        const selection = document.getElementById('benefia-selection');
+
+        if (!imageElement) return;
+
+        // Update image rectangle on load and resize
+        const updateImageRect = () => {
+            if (imageElement) {
+                imageRect = imageElement.getBoundingClientRect();
+                // Adjust for container offset
+                const containerRect = container.getBoundingClientRect();
+                imageRect = {
+                    left: imageRect.left - containerRect.left,
+                    top: imageRect.top - containerRect.top,
+                    width: imageRect.width,
+                    height: imageRect.height
+                };
+            }
+        };
+
+        // Initial update
+        updateImageRect();
+        
+        // Update on window resize
+        const resizeObserver = new ResizeObserver(updateImageRect);
+        resizeObserver.observe(container);
+        
+        // Update on image load
+        imageElement.addEventListener('load', updateImageRect);
+
+        // Mouse down handler (draw new, drag existing area, drag anchor)
+        container.addEventListener('mousedown', (e) => {
+            if (!imageElement) return;
+
+            const containerRect = container.getBoundingClientRect();
+            const anchorPin = e.target.closest('[data-anchor-id]');
+            const overlay = e.target.closest('[data-area-id]');
+
+            // Drag anchor pin
+            if (anchorPin) {
+                const id = anchorPin.getAttribute('data-anchor-id');
+                const anc = anchors.find(x => x.id === id);
+                if (!anc) return;
+                isDraggingArea = true;
+                draggingAreaId = id; // reuse variable name
+                dragOrigW = 0; // not used for anchor
+                dragOrigH = 0;
+                const mouseX = e.clientX - containerRect.left;
+                const mouseY = e.clientY - containerRect.top;
+                dragOffsetX = mouseX - anc.x;
+                dragOffsetY = mouseY - anc.y;
+                e.preventDefault();
+                return;
+            }
+
+            // Drag existing area
+            if (overlay) {
+                const areaId = overlay.getAttribute('data-area-id');
+                const area = areas.find(a => a.id === areaId);
+                if (!area) return;
+
+                // Determine if user grabbed a resize handle
+                const handle = e.target.closest('.benefia-handle');
+                const { x1, y1, x2, y2 } = area.coords;
+                const left = Math.min(x1, x2);
+                const top = Math.min(y1, y2);
+                dragOrigW = Math.abs(x2 - x1);
+                dragOrigH = Math.abs(y2 - y1);
+                const mouseX = e.clientX - containerRect.left;
+                const mouseY = e.clientY - containerRect.top;
+
+                if (handle) {
+                    // Resize mode
+                    const dir = handle.dataset.dir;
+                    isDraggingArea = true;
+                    draggingAreaId = areaId + '::resize::' + dir;
+                    dragOffsetX = mouseX; // store last mouse
+                    dragOffsetY = mouseY;
+                } else {
+                    // Move mode
+                    isDraggingArea = true;
+                    draggingAreaId = areaId;
+                    dragOffsetX = mouseX - left;
+                    dragOffsetY = mouseY - top;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // Draw new area (start on image)
+            if (e.target !== imageElement) return;
+
+            isDrawing = true;
+            startX = e.clientX - containerRect.left;
+            startY = e.clientY - containerRect.top;
+
+            currentArea = {
+                id: `area-${Date.now()}-${areaCounter++}`,
+                type: 'anchor',
+                coords: { x1: startX, y1: startY, x2: startX, y2: startY },
+                href: '#anchor',
+                alt: '',
+                target: ''
+            };
+
+            selection.style.left = `${startX}px`;
+            selection.style.top = `${startY}px`;
+            selection.style.width = '0px';
+            selection.style.height = '0px';
+            selection.style.display = 'block';
+
+            e.preventDefault();
+        });
+
+        // Mouse move handler (draw or drag area/anchor)
+        container.addEventListener('mousemove', (e) => {
+            const containerRect = container.getBoundingClientRect();
+
+            // Dragging existing area
+            if (isDraggingArea && draggingAreaId) {
+                // Try area first
+                const areaIdOnly = draggingAreaId.split('::')[0];
+                const area = areas.find(a => a.id === areaIdOnly);
+                const anchorHit = anchors.find(x => x.id === draggingAreaId);
+
+                let mouseX = e.clientX - containerRect.left;
+                let mouseY = e.clientY - containerRect.top;
+                if (area) {
+                    const parts = draggingAreaId.split('::');
+                    if (parts[1] === 'resize') {
+                        // Resize logic based on direction
+                        const dir = parts[2];
+                        let { x1, y1, x2, y2 } = area.coords;
+                        let left = Math.min(x1, x2);
+                        let top = Math.min(y1, y2);
+                        let right = Math.max(x1, x2);
+                        let bottom = Math.max(y1, y2);
+
+                        if (dir.includes('e')) right = mouseX;
+                        if (dir.includes('s')) bottom = mouseY;
+                        if (dir.includes('w')) left = mouseX;
+                        if (dir.includes('n')) top = mouseY;
+
+                        // Clamp
+                        left = Math.max(imageRect.left, Math.min(left, imageRect.left + imageRect.width - 1));
+                        top = Math.max(imageRect.top, Math.min(top, imageRect.top + imageRect.height - 1));
+                        right = Math.max(left + 1, Math.min(right, imageRect.left + imageRect.width));
+                        bottom = Math.max(top + 1, Math.min(bottom, imageRect.top + imageRect.height));
+
+                        area.coords = { x1: left, y1: top, x2: right, y2: bottom };
+                        const overlay = container.querySelector(`[data-area-id="${area.id}"]`);
+                        if (overlay) {
+                            overlay.style.left = `${left}px`;
+                            overlay.style.top = `${top}px`;
+                            overlay.style.width = `${right - left}px`;
+                            overlay.style.height = `${bottom - top}px`;
+                        }
+                        e.preventDefault();
+                        return;
+                    } else {
+                        // Move logic
+                        let newLeft = mouseX - dragOffsetX;
+                        let newTop = mouseY - dragOffsetY;
+                        // Clamp within image box
+                        newLeft = Math.max(imageRect.left, Math.min(newLeft, imageRect.left + imageRect.width - dragOrigW));
+                        newTop = Math.max(imageRect.top, Math.min(newTop, imageRect.top + imageRect.height - dragOrigH));
+                        // Update model coords
+                        area.coords = { x1: newLeft, y1: newTop, x2: newLeft + dragOrigW, y2: newTop + dragOrigH };
+                        // Update overlay style live
+                        const overlay = container.querySelector(`[data-area-id="${area.id}"]`);
+                        if (overlay) {
+                            overlay.style.left = `${newLeft}px`;
+                            overlay.style.top = `${newTop}px`;
+                            overlay.style.width = `${dragOrigW}px`;
+                            overlay.style.height = `${dragOrigH}px`;
+                        }
+                        e.preventDefault();
+                        return;
+                    }
+                } else if (anchorHit) {
+                    let newLeft = mouseX - dragOffsetX;
+                    let newTop = mouseY - dragOffsetY;
+                    // Clamp within image box
+                    newLeft = Math.max(imageRect.left, Math.min(newLeft, imageRect.left + imageRect.width));
+                    newTop = Math.max(imageRect.top, Math.min(newTop, imageRect.top + imageRect.height));
+                    anchorHit.x = newLeft;
+                    anchorHit.y = newTop;
+                    const pin = container.querySelector(`[data-anchor-id="${draggingAreaId}"]`);
+                    if (pin) {
+                        pin.style.left = `${newLeft}px`;
+                        pin.style.top = `${newTop}px`;
+                    }
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            // Drawing new area
+            if (!isDrawing || !currentArea) return;
+
+            const x = e.clientX - containerRect.left;
+            const y = e.clientY - containerRect.top;
+
+            selection.style.left = `${Math.min(startX, x)}px`;
+            selection.style.top = `${Math.min(startY, y)}px`;
+            selection.style.width = `${Math.abs(x - startX)}px`;
+            selection.style.height = `${Math.abs(y - startY)}px`;
+
+            currentArea.coords = {
+                x1: Math.min(startX, x),
+                y1: Math.min(startY, y),
+                x2: Math.max(startX, x),
+                y2: Math.max(startY, y)
+            };
+
+            e.preventDefault();
+        });
+
+        // Mouse up handler (finish draw or drag)
+        container.addEventListener('mouseup', () => {
+            if (isDraggingArea) {
+                isDraggingArea = false;
+                draggingAreaId = null;
+                renderAreas();
+                renderAnchors();
+                generateBenefiaCode();
+                return;
+            }
+
+            if (!isDrawing || !currentArea) return;
+
+            isDrawing = false;
+            selection.style.display = 'none';
+
+            const { x1, y1, x2, y2 } = currentArea.coords;
+            if (Math.abs(x2 - x1) > 10 && Math.abs(y2 - y1) > 10) {
+                areas.push(currentArea);
+                renderAreas();
+                renderPreview();
+            }
+
+            currentArea = null;
+        });
+
+        // Remove area when clicking on remove button
+        container.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-area-btn');
+            if (removeBtn) {
+                const areaId = removeBtn.getAttribute('data-id');
+                removeArea(areaId);
+                e.stopPropagation();
+            }
+        });
+    }
+
+    // Render preview
+    function renderPreview() {
+        createImagePreview();
+        // 미리보기는 항상 최신 반영, 코드 텍스트는 버튼 클릭 시에만 갱신
+        // generateBenefiaCode();
+    }
+
+    // Add new area
+    function addArea(type = 'anchor') {
+        const areaId = `area-${Date.now()}-${areaCounter++}`;
+        const area = {
+            id: areaId,
+            type,
+            coords: { x1: 0, y1: 0, x2: 100, y2: 50 },
+            href: type === 'anchor' ? '#anchor' : '',
+            alt: '',
+            target: '',
+            couponIds: ''
+        };
+        areas.push(area);
+        renderAreas();
+        renderPreview();
+        return area;
+    }
+
+    // Remove area
+    function removeArea(id) {
+        areas = areas.filter(area => area.id !== id);
+        renderAreas();
+        renderPreview();
+    }
+
+    // Update area
+    function updateArea(id, updates) {
+        const area = areas.find(a => a.id === id);
+        if (area) {
+            Object.assign(area, updates);
+            renderPreview();
+        }
+    }
+
+    // Render areas list
+    function renderAreas() {
+        benefiaAreas.innerHTML = '';
+        areas.forEach((area, index) => {
+            const areaEl = document.createElement('div');
+            areaEl.className = 'benefia-area-item';
+            areaEl.innerHTML = `
+                <div class="benefia-area-header">
+                    <h4>영역 #${index + 1}</h4>
+                    <button class="remove-area-btn text-red-500 hover:text-red-700" data-id="${area.id}">삭제</button>
+                </div>
+                <div class="benefia-area-fields">
+                    <div class="p-2 bg-gray-50 rounded">
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>X1: ${Math.round(area.coords.x1)}</div>
+                            <div>Y1: ${Math.round(area.coords.y1)}</div>
+                            <div>X2: ${Math.round(area.coords.x2)}</div>
+                            <div>Y2: ${Math.round(area.coords.y2)}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="area-type-selector">
+                            <select class="w-full p-2 border rounded" data-id="${area.id}" data-field="type">
+                                <option value="link" ${area.type === 'link' ? 'selected' : ''}>링크</option>
+                                <option value="coupon" ${area.type === 'coupon' ? 'selected' : ''}>쿠폰 다운로드</option>
+                                <option value="anchor" ${area.type === 'anchor' ? 'selected' : ''}>앵커 이동</option>
+                            </select>
+                        </div>
+                        ${area.type === 'link' ? `
+                            <div class="link-input mt-2">
+                                <input type="text" class="w-full p-2 border rounded" placeholder="링크 URL" value="${area.href || ''}" data-id="${area.id}" data-field="href">
+                            </div>
+                            <div class="alt-text-input mt-2">
+                                <input type="text" class="w-full p-2 border rounded" placeholder="대체 텍스트 (alt)" value="${area.alt || ''}" data-id="${area.id}" data-field="alt">
+                            </div>
+                            <div class="anchor-target-input mt-2">
+                                <input type="text" class="w-full p-2 border rounded" placeholder="타겟 (기본: _self)" value="${area.target || ''}" data-id="${area.id}" data-field="target">
+                            </div>
+                        ` : area.type === 'coupon' ? `
+                            <div class="coupon-ids-input mt-2">
+                                <input type="text" class="w-full p-2 border rounded" placeholder="쿠폰 ID (쉼표로 구분)" value="${area.couponIds || ''}" data-id="${area.id}" data-field="couponIds">
+                            </div>
+                        ` : `
+                            <div class="anchor-target-input mt-2">
+                                <input type="text" class="w-full p-2 border rounded" placeholder="앵커 ID (예: #section1)" value="${area.href || ''}" data-id="${area.id}" data-field="href">
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            benefiaAreas.appendChild(areaEl);
+        });
+
+        // Add event listeners
+        document.querySelectorAll('.remove-area-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                removeArea(e.target.getAttribute('data-id'));
+            });
+        });
+
+        document.querySelectorAll('select[data-field="type"]').forEach(select => {
+            select.addEventListener('change', (e) => {
+                updateArea(e.target.getAttribute('data-id'), { type: e.target.value });
+                renderAreas();
+            });
+        });
+
+        document.querySelectorAll('input[data-field]').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const field = e.target.getAttribute('data-field');
+                const value = e.target.value;
+                const id = e.target.getAttribute('data-id');
+                updateArea(id, { [field]: value });
+            });
+        });
+    }
+
+    // Render anchors list
+    function renderAnchors() {
+        benefiaAnchors.innerHTML = '';
+        anchors.forEach((a) => {
+            const el = document.createElement('div');
+            el.className = 'benefia-area-item';
+            el.innerHTML = `
+                <div class="benefia-area-header">
+                    <h4>앵커: <span class="font-mono">#${a.id}</span></h4>
+                    <button class="remove-anchor-btn text-red-500 hover:text-red-700" data-id="${a.id}">삭제</button>
+                </div>
+                <div class="benefia-area-fields">
+                    <div>
+                        <div class="p-2 bg-gray-50 rounded text-sm">X: ${Math.round(a.x)} / Y: ${Math.round(a.y)}</div>
+                    </div>
+                    <div>
+                        <input type="text" class="w-full p-2 border rounded" value="#${a.id}" data-id="${a.id}" data-field="id"/>
+                        <p class="text-xs text-gray-500 mt-1">변경 시 자동으로 '#' 제거됩니다</p>
+                    </div>
+                </div>
+            `;
+            benefiaAnchors.appendChild(el);
+        });
+
+        benefiaAnchors.querySelectorAll('.remove-anchor-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.getAttribute('data-id');
+                anchors = anchors.filter(x => x.id !== id);
+                renderAnchors();
+                generateBenefiaCode();
+                createImagePreview();
+            });
+        });
+
+        benefiaAnchors.querySelectorAll('input[data-field="id"]').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const id = e.target.getAttribute('data-id');
+                const v = e.target.value.replace(/^#/, '').trim();
+                const a = anchors.find(x => x.id === id);
+                if (a) { a.id = v || 'anchor'; }
+                renderAnchors();
+                generateBenefiaCode();
+                createImagePreview();
+            });
+        });
+    }
+
+    // Generate Benefia code
+    function generateBenefiaCode() {
+        if (!imageUrl) {
+            benefiaCodeOutput.value = '';
+            return;
+        }
+
+        // 좌표를 원본 이미지 해상도 기준으로 변환
+        const hasImageMetrics = imageElement && imageRect && imageRect.width > 0 && imageRect.height > 0;
+        const naturalW = hasImageMetrics ? (imageElement.naturalWidth || imageRect.width) : 0;
+        const naturalH = hasImageMetrics ? (imageElement.naturalHeight || imageRect.height) : 0;
+        const scaleX = hasImageMetrics ? (naturalW / imageRect.width) : 1;
+        const scaleY = hasImageMetrics ? (naturalH / imageRect.height) : 1;
+
+        const areaCode = areas.map(area => {
+            const { x1, y1, x2, y2 } = area.coords;
+            const sx1 = Math.round((hasImageMetrics ? x1 * scaleX : x1));
+            const sy1 = Math.round((hasImageMetrics ? y1 * scaleY : y1));
+            const sx2 = Math.round((hasImageMetrics ? x2 * scaleX : x2));
+            const sy2 = Math.round((hasImageMetrics ? y2 * scaleY : y2));
+            const coords = [sx1, sy1, sx2, sy2].join(',');
+            
+            if (area.type === 'coupon' && area.couponIds) {
+                const couponIds = area.couponIds.split(',').map(id => `'${id.trim()}'`).join(', ');
+                return `        <area alt="${area.alt || '쿠폰 받기'}" href="javascript:void(0)" onclick="couponDownloadAll([${couponIds}]); return false;" coords="${coords}" shape="rect" style="cursor: pointer;">`;
+            } else if (area.type === 'anchor') {
+                return `        <area alt="${area.alt || '이동'}" href="${area.href || '#'}" coords="${coords}" shape="rect" style="cursor: pointer;">`;
+            } else {
+                const target = area.target ? ` target="${area.target}"` : '';
+                return `        <area alt="${area.alt || '링크'}" href="${area.href || '#'}"${target} coords="${coords}" shape="rect" style="cursor: pointer;">`;
+            }
+        }).join('\n');
+
+        // Anchors absolute positioned inside the same container
+        const anchorCode = anchors.map(a => {
+            const ax = Math.round(hasImageMetrics ? a.x * scaleX : a.x);
+            const ay = Math.round(hasImageMetrics ? a.y * scaleY : a.y);
+            return `            <div id="${a.id}" style="position:absolute; left:${ax}px; top:${ay}px; width:1px; height:1px; overflow:hidden;">&nbsp;</div>`;
+        }).join('\n');
+
+        // usemap과 map의 name이 항상 일치하도록 단일 ID 사용
+        const mapId = `image-map-${Date.now()}`;
+
+        const code = `
+<div class="content">
+    <div style="text-align: center;">
+        <div style="position:relative; max-width: 1180px; margin: 0 auto;">
+            <img src="${imageUrl}" style="border:0; max-width: 100%;" usemap="#${mapId}">
+            <map name="${mapId}">
+${areaCode}
+            </map>
+${anchorCode ? anchorCode + '\n' : ''}
+        </div>
+    </div>
+</div>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery.rwdImageMaps.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('img[usemap]').rwdImageMaps();
+    // 이미지맵 앵커(#id) 클릭 시 부드러운 스크롤로 이동
+    $(document).on('click', 'area[href^="#"]', function(e){
+        var href = $(this).attr('href');
+        if(!href || href === '#') return; 
+        var $target = $(href);
+        if($target.length){
+            e.preventDefault();
+            // 가장 가까운 스크롤 컨테이너 찾기 (없으면 문서 스크롤)
+            var $from = $(this);
+            var $container = $from.closest('.event-wrap, .new-pb-container, .page_wrap, .middle_zone, body');
+            var isDoc = $container.is('body');
+            var top = $target.offset().top;
+            if(isDoc){
+                $('html, body').animate({ scrollTop: top }, 400);
+            }else{
+                var cTop = $container.offset().top;
+                var current = $container.scrollTop();
+                $container.animate({ scrollTop: current + (top - cTop) }, 400);
+            }
+        }
+    });
+});
+</script>
+        `;
+
+        benefiaCodeOutput.value = code.trim();
+    }
+
+    // Render image list UI
+    function renderImageListUI() {
+        if (!benefiaImageList) return;
+        benefiaImageList.innerHTML = '';
+        imageListState.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.className = 'benefia-img-item';
+            row.innerHTML = `
+                <img src="${item.url || ''}" alt="thumb">
+                <input type="text" class="flex-1 p-2 border rounded" placeholder="이미지 URL" value="${item.url || ''}" data-id="${item.id}">
+                <button class="px-2 py-1 bg-blue-500 text-white rounded text-sm select-btn" data-id="${item.id}">선택</button>
+                <button class="px-2 py-1 bg-red-500 text-white rounded text-sm remove-btn" data-id="${item.id}">삭제</button>
+            `;
+            benefiaImageList.appendChild(row);
+        });
+
+        // bind inputs
+        benefiaImageList.querySelectorAll('input[type="text"]').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const id = e.target.getAttribute('data-id');
+                const it = imageListState.find(x => x.id === id);
+                if (it) it.url = e.target.value.trim();
+                renderImageListUI();
+            });
+        });
+        // bind select
+        benefiaImageList.querySelectorAll('.select-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.getAttribute('data-id');
+                const it = imageListState.find(x => x.id === id);
+                if (it && it.url) {
+                    imageUrl = it.url;
+                    benefiaImageUrl.value = it.url;
+                    renderPreview();
+                } else {
+                    alert('이미지 URL을 먼저 입력하세요.');
+                }
+            });
+        });
+        // bind remove
+        benefiaImageList.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.getAttribute('data-id');
+                imageListState = imageListState.filter(x => x.id !== id);
+                renderImageListUI();
+            });
+        });
+    }
+
+    // Reset Benefia tab
+    function resetBenefia() {
+        areas = [];
+        anchors = [];
+        imageUrl = '';
+        benefiaImageUrl.value = '';
+        benefiaPreview.innerHTML = '<p class="text-gray-500 text-center py-20">이미지 URL을 입력하세요</p>';
+        benefiaCodeOutput.value = '';
+        renderAreas();
+        renderAnchors();
+    }
+
+    // Event listeners
+    addAreaBtn?.addEventListener('click', () => addArea('anchor'));
+    addAreaAnchorBtn?.addEventListener('click', () => addArea('anchor'));
+    addAreaCouponBtn?.addEventListener('click', () => addArea('coupon'));
+    addAreaLinkBtn?.addEventListener('click', () => addArea('link'));
+    // Add anchor button handler
+    function addAnchor() {
+        if (!imageElement || !imageRect) {
+            alert('먼저 이미지 URL을 입력하세요.');
+            return;
+        }
+        const idx = anchors.length + 1;
+        const id = `anchor-${idx}`;
+        const x = Math.round(imageRect.left + imageRect.width / 2);
+        const y = Math.round(imageRect.top + imageRect.height / 2);
+        anchors.push({ id, x, y });
+        renderAnchors();
+        createImagePreview();
+        generateBenefiaCode();
+    }
+    if (addAnchorBtn) {
+        addAnchorBtn.addEventListener('click', addAnchor);
+    }
+    copyBenefiaCodeBtn.addEventListener('click', () => {
+        benefiaCodeOutput.select();
+        document.execCommand('copy');
+        const originalText = copyBenefiaCodeBtn.textContent;
+        copyBenefiaCodeBtn.textContent = '복사됨!';
+        setTimeout(() => {
+            copyBenefiaCodeBtn.textContent = originalText;
+        }, 2000);
+    });
+    // 코드 생성 버튼: 현재 상태를 코드 텍스트에 반영
+    if (generateBenefiaCodeBtn) {
+        generateBenefiaCodeBtn.addEventListener('click', () => {
+            generateBenefiaCode();
+            generateBenefiaCodeBtn.textContent = '생성 완료';
+            setTimeout(() => generateBenefiaCodeBtn.textContent = '코드 생성', 1500);
+        });
+    }
+    resetBenefiaBtn.addEventListener('click', resetBenefia);
+    if (addBenefiaImageBtn) {
+        addBenefiaImageBtn.addEventListener('click', () => {
+            const id = `img-${Date.now()}`;
+            imageListState.push({ id, url: '' });
+            renderImageListUI();
+        });
+    }
+
+    // Update image URL and preview when changed
+    benefiaImageUrl.addEventListener('input', (e) => {
+        imageUrl = e.target.value.trim();
+        if (imageUrl) {
+            renderPreview();
+        } else {
+            benefiaPreview.innerHTML = '<p class="text-gray-500 text-center py-20">이미지 URL을 입력하세요</p>';
+            benefiaCodeOutput.value = '';
+        }
+    });
+
+    // Initial render
+    renderImageListUI();
+    renderPreview();
+}
