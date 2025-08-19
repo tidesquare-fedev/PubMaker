@@ -164,6 +164,13 @@ function addButtonConfigRow(imageRow, buttonIndex) {
             <div class="link-fields hidden">
                 <label class="block text-sm font-medium text-gray-700">연결 URL</label>
                 <input type="text" placeholder="https://..." class="link-url w-full p-2 border border-gray-300 rounded-md">
+                <div class="mt-2">
+                    <label class="block text-sm font-medium text-gray-700">열기 방식</label>
+                    <select class="link-target w-full p-2 border border-gray-300 rounded-md">
+                        <option value="_blank" selected>새 창(탭)</option>
+                        <option value="_self">현재 페이지 이동</option>
+                    </select>
+                </div>
             </div>
         </div>
     `;
@@ -435,7 +442,8 @@ function generateCode() {
                     buttonTag = `<a data-map-anchor="true" style="${style}" href="javascript:${jsFunc}('${airlineCode}');">항공권 예약하기</a>`;
                 } else {
                     const linkUrl = configRow.querySelector('.link-url').value;
-                    buttonTag = `<a data-map-anchor="true" style="${style}" href="${linkUrl}" target="_blank">단순 링크</a>`;
+                    const linkTarget = (configRow.querySelector('.link-target')?.value) || '_blank';
+                    buttonTag = `<a data-map-anchor="true" style="${style}" href="${linkUrl}" target="${linkTarget}">단순 링크</a>`;
                 }
                 contentInsideDiv += `\n        ${buttonTag}`;
             });
@@ -509,7 +517,8 @@ function renderPreview() {
                     buttonTag = `<a data-map-anchor="true" style="${style}" href="javascript:${jsFunc}('${airlineCode}');">항공권 예약하기</a>`;
                 } else {
                     const linkUrl = configRow.querySelector('.link-url').value;
-                    buttonTag = `<a data-map-anchor="true" style="${style}" href="${linkUrl}" target="_blank">단순 링크</a>`;
+                    const linkTarget = (configRow.querySelector('.link-target')?.value) || '_blank';
+                    buttonTag = `<a data-map-anchor="true" style="${style}" href="${linkUrl}" target="${linkTarget}">단순 링크</a>`;
                 }
                 contentInsideDiv += `\n        ${buttonTag}`;
             });
