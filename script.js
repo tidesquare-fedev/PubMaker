@@ -1260,8 +1260,8 @@ function initializeBenefiaTab() {
             const areaCode = (item.areas || []).map(area => {
                 const coords = buildCoords(area);
                 if (area.type === 'coupon' && area.couponIds) {
-                    const couponIds = area.couponIds.split(',').map(id => `'${id.trim()}'`).join(', ');
-                    return `        <area alt="${area.alt || '쿠폰 받기'}" href="javascript:void(0)" onclick="couponDownloadAll([${couponIds}]); return false;" coords="${coords}" shape="rect" style="cursor: pointer;">`;
+                    const couponIds = area.couponIds.split(',').map(id => id.trim()).join(',');
+                    return `        <area alt="${area.alt || '쿠폰 받기'}" href="javascript:void(0)" data-coupons="${couponIds}" coords="${coords}" shape="rect" style="cursor: pointer;">`;
                 } else if (area.type === 'anchor') {
                     return `        <area alt="${area.alt || '이동'}" href="${area.href || '#'}" coords="${coords}" shape="rect" style="cursor: pointer;">`;
                 } else {
@@ -1297,31 +1297,44 @@ ${anchorCode ? anchorCode + '\n' : ''}
         }).join('\n\n');
 
         const script = `
-<script src="js/jquery.min.js"></script>
-<script src="js/jquery.rwdImageMaps.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.rwdImageMaps/1.6/jquery.rwdImageMaps.min.js"></script>
 <script>
-$(document).ready(function() {
+(function($){
+  $(function(){
     $('img[usemap]').rwdImageMaps();
+    // 앵커(#) 스크롤 이동
     $(document).on('click', 'area[href^="#"]', function(e){
-        var href = $(this).attr('href');
-        if(!href || href === '#') return; 
-        var $target = $(href);
-        if($target.length){
-            e.preventDefault();
-            var $from = $(this);
-            var $container = $from.closest('.event-wrap, .new-pb-container, .page_wrap, .middle_zone, body');
-            var isDoc = $container.is('body');
-            var top = $target.offset().top;
-            if(isDoc){
-                $('html, body').animate({ scrollTop: top }, 400);
-            }else{
-                var cTop = $container.offset().top;
-                var current = $container.scrollTop();
-                $container.animate({ scrollTop: current + (top - cTop) }, 400);
-            }
+      var href = $(this).attr('href');
+      if(!href || href === '#') return;
+      var $target = $(href);
+      if($target.length){
+        e.preventDefault();
+        var $from = $(this);
+        var $container = $from.closest('.event-wrap, .new-pb-container, .page_wrap, .middle_zone, body');
+        var isDoc = $container.is('body');
+        var top = $target.offset().top;
+        if(isDoc){ $('html, body').animate({ scrollTop: top }, 400); }
+        else {
+          var cTop = $container.offset().top;
+          var current = $container.scrollTop();
+          $container.animate({ scrollTop: current + (top - cTop) }, 400);
         }
+      }
     });
-});
+    // 쿠폰 다운로드(인라인 onclick 제거 대체)
+    $(document).on('click', 'area[data-coupons]', function(e){
+      e.preventDefault();
+      var raw = $(this).data('coupons')+'';
+      var ids = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      if (typeof window.couponDownloadAll === 'function') {
+        window.couponDownloadAll(ids);
+      } else {
+        console.warn('couponDownloadAll 함수가 정의되지 않았습니다.', ids);
+      }
+    });
+  });
+})(jQuery);
 </script>`;
 
         benefiaCodeOutput.value = (blocks + '\n\n' + script).trim();
