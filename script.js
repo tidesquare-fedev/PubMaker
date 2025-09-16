@@ -596,10 +596,13 @@ addImageBtn.addEventListener('click', addImageRow);
 resetBtn.addEventListener('click', initializeApp);
 generateBtn.addEventListener('click', generateCode);
 copyBtn.addEventListener('click', () => {
-    codeOutput.select();
-    document.execCommand('copy');
-    copyBtn.textContent = '복사 완료!';
-    setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
+    const originalText = copyBtn.textContent;
+    copyWithCRLF(codeOutput.value, () => {
+        copyBtn.textContent = '복사 완료!';
+        setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
+    }, () => {
+        alert('복사에 실패했습니다. 수동으로 Ctrl+C를 사용해 주세요.');
+    });
 });
 
 // Initialize the app when DOM is loaded
@@ -1429,13 +1432,15 @@ ${anchorCode}
         addAnchorBtnSecondary.addEventListener('click', addAnchor);
     }
     copyBenefiaCodeBtn.addEventListener('click', () => {
-        benefiaCodeOutput.select();
-        document.execCommand('copy');
         const originalText = copyBenefiaCodeBtn.textContent;
-        copyBenefiaCodeBtn.textContent = '복사됨!';
-        setTimeout(() => {
-            copyBenefiaCodeBtn.textContent = originalText;
-        }, 2000);
+        copyWithCRLF(benefiaCodeOutput.value, () => {
+            copyBenefiaCodeBtn.textContent = '복사됨!';
+            setTimeout(() => {
+                copyBenefiaCodeBtn.textContent = originalText;
+            }, 2000);
+        }, () => {
+            alert('복사에 실패했습니다. 수동으로 Ctrl+C를 사용해 주세요.');
+        });
     });
     // 코드 생성 버튼: 현재 상태를 코드 텍스트에 반영
     if (generateBenefiaCodeBtn) {
@@ -1462,4 +1467,35 @@ ${anchorCode}
     // Initial render
     renderImageListUI();
     renderPreview();
+}
+
+// Helper: copy text with CRLF newlines using Clipboard API with fallback
+function copyWithCRLF(text, onSuccess, onError) {
+    const crlfText = text.replace(/\r?\n/g, '\r\n');
+    const fallbackCopy = () => {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = crlfText;
+            ta.style.position = 'fixed';
+            ta.style.top = '-1000px';
+            ta.setAttribute('readonly', '');
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (onSuccess) onSuccess();
+        } catch (e) {
+            if (onError) onError(e);
+        }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(crlfText).then(() => {
+            if (onSuccess) onSuccess();
+        }).catch(() => {
+            fallbackCopy();
+        });
+    } else {
+        fallbackCopy();
+    }
 }
