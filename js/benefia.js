@@ -8,20 +8,40 @@ function initializeBenefiaTab() {
   const benefiaCodeOutput = document.getElementById("benefia-code-output");
   const copyBenefiaCodeBtn = document.getElementById("copy-benefia-code");
   const generateBenefiaCodeBtn = document.getElementById(
-    "generate-benefia-code"
+    "generate-benefia-code",
   );
   const resetBenefiaBtn = document.getElementById("reset-benefia-btn");
   const benefiaAnchors = document.getElementById("benefia-anchors");
-  const addAnchorBtn = document.getElementById("add-benefia-anchor");
-  const addAnchorBtnSecondary = document.getElementById(
-    "add-benefia-anchor-secondary"
-  );
+  // 앵커는 클릭 영역이 아니라 '도착 지점'이라 '앵커 영역 설정' 쪽에서만 추가한다.
+  const addAnchorBtn = document.getElementById("add-benefia-anchor-secondary");
   const addAreaAnchorBtn = document.getElementById("add-benefia-area-anchor");
   const addAreaCouponBtn = document.getElementById("add-benefia-area-coupon");
   const addAreaLinkBtn = document.getElementById("add-benefia-area-link");
+  const addAreaVideoBtn = document.getElementById("add-benefia-area-video");
+  const addTabScrollBtn = document.getElementById("add-benefia-tabscroll");
+  const tabScrollCountInput = document.getElementById(
+    "benefia-tabscroll-count",
+  );
+  const anchorOffsetEnabled = document.getElementById(
+    "benefia-anchor-offset-enabled",
+  );
+  const anchorOffsetInput = document.getElementById("benefia-anchor-offset");
+  const stickyPanel = document.getElementById("benefia-sticky-panel");
+  const tabSwitchPanel = document.getElementById("benefia-tabswitch-panel");
   const benefiaImageRowsContainer =
     document.getElementById("benefia-image-rows");
   const addBenefiaRowBtn = document.getElementById("benefia-add-image-row");
+
+  // 스티키 탭 설정 (이미지 목록 전체에 걸치는 값이라 이미지별 상태와 분리)
+  let stickyTab = {
+    enabled: false,
+    menuId: "menu",
+    maxWidth: 1180,
+    headerOffset: 0,
+    tabs: [],
+  };
+  // 탭 콘텐츠 전환 설정
+  let tabSwitch = { groups: [] };
 
   let imageListState = []; // [{id, url, areas:[], anchors:[]}]
   let activeImageId = null; // 현재 편집 중인 이미지 ID
@@ -117,14 +137,23 @@ function initializeBenefiaTab() {
                           area.type === "anchor" &&
                           area.href &&
                           area.href.startsWith("#");
+                        const isVideoArea = area.type === "video";
                         const cls = isAnchorArea
                           ? "benefia-anchor-box"
-                          : "absolute border-2 border-red-500 bg-red-100 bg-opacity-30 flex items-center justify-center";
+                          : isVideoArea
+                            ? "benefia-video-box"
+                            : "absolute border-2 border-red-500 bg-red-100 bg-opacity-30 flex items-center justify-center";
                         const labelHtml = isAnchorArea
-                          ? `<span class=\"benefia-anchor-label\">ANCHOR</span>`
-                          : `<span class=\"bg-red-500 text-white text-xs px-1 rounded absolute -top-3 -left-px\">${
-                              index + 1
-                            }</span>`;
+                          ? `<span class=\"benefia-anchor-label\">ANCHOR ${
+                              area.href || ""
+                            }</span>`
+                          : isVideoArea
+                            ? `<span class=\"benefia-video-label\">VIDEO ${
+                                area.videoKind === "mp4" ? "MP4" : "YOUTUBE"
+                              }</span>`
+                            : `<span class=\"bg-red-500 text-white text-xs px-1 rounded absolute -top-3 -left-px\">${
+                                index + 1
+                              }</span>`;
                         return `<div class="${cls}" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;" data-area-id="${area.id}">${labelHtml}
                             <div class=\"benefia-handle nw\" data-dir=\"nw\"></div>
                             <div class=\"benefia-handle n\" data-dir=\"n\"></div>
@@ -142,11 +171,12 @@ function initializeBenefiaTab() {
                       .map((a) => {
                         const left = Math.round(a.x);
                         const top = Math.round(a.y);
-                        return `<div class="benefia-anchor-pin" data-anchor-id="${a.id}" style="left:${left}px; top:${top}px" title="${a.id}"></div>`;
+                        // 코드에는 가로 전체 폭 섹션으로 나가므로 가이드 라인도 함께 표시
+                        return `<div class="benefia-section-line" style="top:${top}px"></div><div class="benefia-anchor-pin" data-anchor-id="${a.id}" style="left:${left}px; top:${top}px" title="${a.id}"></div>`;
                       })
                       .join("")}
                 </div>
-                <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs p-1 rounded">영역을 선택하려면 이미지 위에서 드래그하세요</div>
+                <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-sm p-1 rounded">영역을 선택하려면 이미지 위에서 드래그하세요</div>
             </div>`;
       })
       .join("");
@@ -301,19 +331,19 @@ function initializeBenefiaTab() {
             // Clamp
             left = Math.max(
               imageRect.left,
-              Math.min(left, imageRect.left + imageRect.width - 1)
+              Math.min(left, imageRect.left + imageRect.width - 1),
             );
             top = Math.max(
               imageRect.top,
-              Math.min(top, imageRect.top + imageRect.height - 1)
+              Math.min(top, imageRect.top + imageRect.height - 1),
             );
             right = Math.max(
               left + 1,
-              Math.min(right, imageRect.left + imageRect.width)
+              Math.min(right, imageRect.left + imageRect.width),
             );
             bottom = Math.max(
               top + 1,
-              Math.min(bottom, imageRect.top + imageRect.height)
+              Math.min(bottom, imageRect.top + imageRect.height),
             );
 
             area.coords = { x1: left, y1: top, x2: right, y2: bottom };
@@ -326,7 +356,7 @@ function initializeBenefiaTab() {
               };
             }
             const overlay = container.querySelector(
-              `[data-area-id="${area.id}"]`
+              `[data-area-id="${area.id}"]`,
             );
             if (overlay) {
               overlay.style.left = `${left}px`;
@@ -343,11 +373,11 @@ function initializeBenefiaTab() {
             // Clamp within image box
             newLeft = Math.max(
               imageRect.left,
-              Math.min(newLeft, imageRect.left + imageRect.width - dragOrigW)
+              Math.min(newLeft, imageRect.left + imageRect.width - dragOrigW),
             );
             newTop = Math.max(
               imageRect.top,
-              Math.min(newTop, imageRect.top + imageRect.height - dragOrigH)
+              Math.min(newTop, imageRect.top + imageRect.height - dragOrigH),
             );
             // Update model coords
             area.coords = {
@@ -366,7 +396,7 @@ function initializeBenefiaTab() {
             }
             // Update overlay style live
             const overlay = container.querySelector(
-              `[data-area-id="${area.id}"]`
+              `[data-area-id="${area.id}"]`,
             );
             if (overlay) {
               overlay.style.left = `${newLeft}px`;
@@ -383,11 +413,11 @@ function initializeBenefiaTab() {
           // Clamp within image box
           newLeft = Math.max(
             imageRect.left,
-            Math.min(newLeft, imageRect.left + imageRect.width)
+            Math.min(newLeft, imageRect.left + imageRect.width),
           );
           newTop = Math.max(
             imageRect.top,
-            Math.min(newTop, imageRect.top + imageRect.height)
+            Math.min(newTop, imageRect.top + imageRect.height),
           );
           anchorHit.x = newLeft;
           anchorHit.y = newTop;
@@ -396,7 +426,7 @@ function initializeBenefiaTab() {
             anchorHit.yp = (newTop - imageRect.top) / imageRect.height;
           }
           const pin = container.querySelector(
-            `[data-anchor-id="${draggingAreaId}"]`
+            `[data-anchor-id="${draggingAreaId}"]`,
           );
           if (pin) {
             pin.style.left = `${newLeft}px`;
@@ -487,7 +517,7 @@ function initializeBenefiaTab() {
   }
 
   // Add new area
-  function addArea(type = "anchor") {
+  function addArea(type = "anchor", overrides = {}) {
     const areaId = `area-${Date.now()}-${areaCounter++}`;
     const area = {
       id: areaId,
@@ -497,7 +527,24 @@ function initializeBenefiaTab() {
       alt: "",
       target: "",
       couponIds: "",
+      videoKind: "youtube",
+      videoSrc: "",
+      videoScale: 100,
+      videoAutoplay: true,
+      videoMuted: true,
+      videoLoop: true,
+      videoControls: false,
+      ...overrides,
     };
+    // 드래그 전에도 비율 좌표를 갖도록 초기화 (코드 생성 좌표계 일치)
+    if (imageRect && imageRect.width && imageRect.height) {
+      area.coordsPct = {
+        x1: (area.coords.x1 - imageRect.left) / imageRect.width,
+        y1: (area.coords.y1 - imageRect.top) / imageRect.height,
+        x2: (area.coords.x2 - imageRect.left) / imageRect.width,
+        y2: (area.coords.y2 - imageRect.top) / imageRect.height,
+      };
+    }
     areas.push(area);
     // 이미지별 상태에 동기화
     const itIdx = imageListState.findIndex((x) => x.id === activeImageId);
@@ -568,11 +615,16 @@ function initializeBenefiaTab() {
                                 <option value="anchor" ${
                                   area.type === "anchor" ? "selected" : ""
                                 }>앵커 이동</option>
+                                <option value="video" ${
+                                  area.type === "video" ? "selected" : ""
+                                }>영상</option>
                             </select>
                         </div>
                         ${
-                          area.type === "link"
-                            ? `
+                          area.type === "video"
+                            ? PubFeatures.renderVideoFields(area, area.id)
+                            : area.type === "link"
+                              ? `
                             <div class="link-input mt-2">
                                 <input type="text" class="w-full p-2 border rounded" placeholder="링크 URL" value="${
                                   area.href || ""
@@ -589,15 +641,15 @@ function initializeBenefiaTab() {
                                 }" data-id="${area.id}" data-field="target">
                             </div>
                         `
-                            : area.type === "coupon"
-                            ? `
+                              : area.type === "coupon"
+                                ? `
                             <div class="coupon-ids-input mt-2">
                                 <input type="text" class="w-full p-2 border rounded" placeholder="쿠폰 ID (쉼표로 구분)" value="${
                                   area.couponIds || ""
                                 }" data-id="${area.id}" data-field="couponIds">
                             </div>
                         `
-                            : `
+                                : `
                             <div class="anchor-target-input mt-2">
                                 <input type="text" class="w-full p-2 border rounded" placeholder="앵커 ID (예: #section1)" value="${
                                   area.href || ""
@@ -611,24 +663,41 @@ function initializeBenefiaTab() {
       benefiaAreas.appendChild(areaEl);
     });
 
-    // Add event listeners
-    document.querySelectorAll(".remove-area-btn").forEach((btn) => {
+    // Add event listeners (컨테이너 범위로 한정 — 다른 탭의 동일 셀렉터와 섞이지 않도록)
+    benefiaAreas.querySelectorAll(".remove-area-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         removeArea(e.target.getAttribute("data-id"));
       });
     });
 
-    document.querySelectorAll('select[data-field="type"]').forEach((select) => {
-      select.addEventListener("change", (e) => {
-        updateArea(e.target.getAttribute("data-id"), { type: e.target.value });
-        renderAreas();
+    benefiaAreas
+      .querySelectorAll('select[data-field="type"]')
+      .forEach((select) => {
+        select.addEventListener("change", (e) => {
+          updateArea(e.target.getAttribute("data-id"), {
+            type: e.target.value,
+          });
+          renderAreas();
+        });
       });
-    });
 
-    document.querySelectorAll("input[data-field]").forEach((input) => {
-      input.addEventListener("input", (e) => {
+    // 영상 종류 변경은 입력 필드 구성이 달라지므로 목록을 다시 그린다.
+    benefiaAreas
+      .querySelectorAll('select[data-field="videoKind"]')
+      .forEach((select) => {
+        select.addEventListener("change", (e) => {
+          updateArea(e.target.getAttribute("data-id"), {
+            videoKind: e.target.value,
+          });
+          renderAreas();
+        });
+      });
+
+    benefiaAreas.querySelectorAll("input[data-field]").forEach((input) => {
+      const isCheckbox = input.type === "checkbox";
+      input.addEventListener(isCheckbox ? "change" : "input", (e) => {
         const field = e.target.getAttribute("data-field");
-        const value = e.target.value;
+        const value = isCheckbox ? e.target.checked : e.target.value;
         const id = e.target.getAttribute("data-id");
         updateArea(id, { [field]: value });
       });
@@ -654,14 +723,14 @@ function initializeBenefiaTab() {
                 <div class="benefia-area-fields">
                     <div>
                         <div class="p-2 bg-gray-50 rounded text-sm">X: ${Math.round(
-                          a.x
+                          a.x,
                         )} / Y: ${Math.round(a.y)}</div>
                     </div>
                     <div>
                         <input type="text" class="w-full p-2 border rounded" value="#${
                           a.id
                         }" data-id="${a.id}" data-field="id"/>
-                        <p class="text-xs text-gray-500 mt-1">변경 시 자동으로 '#' 제거됩니다</p>
+                        <p class="text-sm text-gray-500 mt-1">변경 시 자동으로 '#' 제거됩니다</p>
                     </div>
                 </div>
             `;
@@ -721,81 +790,112 @@ function initializeBenefiaTab() {
       return;
     }
 
-    const toPctRect = (area, nW, nH) => {
-      if (area.coordsPct) {
-        return {
-          left: (area.coordsPct.x1 * 100).toFixed(2),
-          top: (area.coordsPct.y1 * 100).toFixed(2),
-          width: ((area.coordsPct.x2 - area.coordsPct.x1) * 100).toFixed(2),
-          height: ((area.coordsPct.y2 - area.coordsPct.y1) * 100).toFixed(2),
-        };
-      }
-      if (area.coords && nW && nH) {
-        const { x1, y1, x2, y2 } = area.coords;
-        return {
-          left: ((x1 / nW) * 100).toFixed(2),
-          top: ((y1 / nH) * 100).toFixed(2),
-          width: (((x2 - x1) / nW) * 100).toFixed(2),
-          height: (((y2 - y1) / nH) * 100).toFixed(2),
-        };
-      }
-      return { left: "0", top: "0", width: "0", height: "0" };
-    };
+    const toPctRect = PubFeatures.toPctRect;
+    const items = imageListState.filter((it) => it.url);
 
-    const blocks = imageListState
-      .filter((it) => it.url)
-      .map((item) => {
-        const nW = item.naturalW || 0;
-        const nH = item.naturalH || 0;
+    let hasAnchorLink = false;
 
-        const overlayCode = (item.areas || [])
-          .map((area) => {
-            const r = toPctRect(area, nW, nH);
-            const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px;`;
-            if (area.type === "coupon" && area.couponIds) {
-              const ids = area.couponIds
-                .split(",")
-                .map((id) => `'${id.trim()}'`)
-                .filter(Boolean)
-                .join(", ");
-              return `      <a href="javascript:void(0)" onclick="couponDownloadAll([${ids}]); return false;" style="${style}"></a>`;
-            } else if (area.type === "anchor") {
-              return `      <a href="${
-                area.href || "#"
-              }" style="${style}"></a>`;
-            } else {
-              const target = area.target ? ` target="${area.target}"` : "";
-              return `      <a href="${
-                area.href || "#"
-              }"${target} style="${style}"></a>`;
-            }
-          })
-          .join("\n");
+    const blocks = items.map((item) => {
+      const nW = item.naturalW || 0;
+      const nH = item.naturalH || 0;
 
-        const anchorCode = (item.anchors || [])
-          .map((a) => {
-            const left =
-              typeof a.xp === "number" ? (a.xp * 100).toFixed(2) : "0";
-            const top =
-              typeof a.yp === "number" ? (a.yp * 100).toFixed(2) : "0";
-            return `      <div id="${a.id}" style="position:absolute; left:${left}%; top:${top}%; width:1px; height:1px; overflow:hidden;">&nbsp;</div>`;
-          })
-          .join("\n");
+      const overlayCode = (item.areas || [])
+        .filter((area) => area.type !== "video")
+        .map((area) => {
+          const r = toPctRect(area, nW, nH);
+          const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px;`;
+          if (area.type === "coupon" && area.couponIds) {
+            const ids = area.couponIds
+              .split(",")
+              .map((id) => `'${id.trim()}'`)
+              .filter(Boolean)
+              .join(", ");
+            return `        <a href="javascript:void(0)" onclick="couponDownloadAll([${ids}]); return false;" style="${style}"></a>`;
+          } else if (area.type === "anchor") {
+            hasAnchorLink = true;
+            return `        <a href="${
+              area.href || "#"
+            }" style="${style}"></a>`;
+          } else {
+            const target = area.target ? ` target="${area.target}"` : "";
+            return `        <a href="${
+              area.href || "#"
+            }"${target} style="${style}"></a>`;
+          }
+        })
+        .join("\n");
 
-        return `
-<div class="content">
-  <div style="text-align: center;">
-    <div style="position:relative; max-width: 1180px; margin: 0 auto;">
-      <img src="${item.url}" style="border:0; max-width: 100%; display:block;">
-${overlayCode}
-${anchorCode}
+      // 영상 오버레이
+      const videoCode = (item.areas || [])
+        .filter((area) => area.type === "video" && area.videoSrc)
+        .map((area) =>
+          PubFeatures.buildVideoOverlay(
+            area,
+            toPctRect(area, nW, nH),
+            { w: nW, h: nH },
+            "        ",
+          ),
+        )
+        .join("\n");
+
+      // 앵커(섹션 마커): 가로 전체 폭 / 높이 1px — 세로 위치만 의미가 있다.
+      const anchorCode = (item.anchors || [])
+        .map((a) => {
+          const top = typeof a.yp === "number" ? (a.yp * 100).toFixed(2) : "0";
+          return PubFeatures.buildSectionMarker(a.id, top, "        ");
+        })
+        .join("\n");
+
+      const inner = [overlayCode, videoCode, anchorCode]
+        .filter(Boolean)
+        .join("\n");
+
+      return `  <div class="content">
+    <div style="text-align: center;">
+      <div style="position:relative; max-width: 1180px; margin: 0 auto;">
+        <img src="${item.url}" style="border:0; max-width: 100%; display:block;">${
+          inner ? "\n" + inner : ""
+        }
+      </div>
     </div>
-  </div>
-</div>`;
-      })
-      .join("\n\n");
+  </div>`;
+    });
 
-    benefiaCodeOutput.value = blocks.trim();
+    // 두 기능은 같은 블록 범위를 감싸므로 동시에 적용할 수 없다. 콘텐츠 전환이 우선.
+    const switchOn = PubFeatures.hasTabSwitch(tabSwitch, blocks.length);
+    const stickyOn =
+      !switchOn && stickyTab.enabled && stickyTab.tabs.length > 0;
+
+    const body = switchOn
+      ? PubFeatures.wrapBlocksWithTabSwitch(blocks, tabSwitch, "  ")
+      : stickyOn
+        ? PubFeatures.wrapBlocksWithStickyTabs(blocks, stickyTab, "  ")
+        : blocks.join("\n\n");
+
+    const head = [];
+    const tail = [];
+    if (switchOn) {
+      head.push(PubFeatures.buildTabSwitchStyle(tabSwitch, blocks.length));
+      tail.push(PubFeatures.buildTabSwitchScript());
+      if (hasAnchorLink) head.push(PubFeatures.SMOOTH_SCROLL_STYLE);
+    } else if (stickyOn) {
+      head.push(PubFeatures.buildStickyTabStyle());
+      tail.push(PubFeatures.buildStickyTabScript(stickyTab));
+    } else if (hasAnchorLink) {
+      head.push(PubFeatures.SMOOTH_SCROLL_STYLE);
+    }
+    if (!stickyOn && anchorOffsetEnabled && anchorOffsetEnabled.checked) {
+      tail.push(
+        PubFeatures.buildAnchorOffsetScript(
+          Number(anchorOffsetInput.value) || 0,
+        ),
+      );
+    }
+
+    benefiaCodeOutput.value = [...head, body, ...tail]
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
   }
 
   // Render image rows UI (투어비스와 유사한 행 기반)
@@ -824,15 +924,8 @@ ${anchorCode}
                         <img src="${
                           item.url || ""
                         }" class="thumbnail-preview mt-1 ${
-        item.url ? "" : "hidden"
-      }">
-                        <div class="flex-grow">
-                            <div class="flex items-center space-x-2">
-                                <label class="text-sm">배경색:</label>
-                                <input type="color" value="#FFFFFF" class="bg-color w-10 h-8 border-0 cursor-pointer rounded">
-                                <input type="text" placeholder="#FFFFFF" class="bg-color-text w-full p-2 border border-gray-300 rounded-md text-sm">
-                            </div>
-                        </div>
+                          item.url ? "" : "hidden"
+                        }">
                     </div>
                 </div>`;
       benefiaImageRowsContainer.appendChild(row);
@@ -846,8 +939,22 @@ ${anchorCode}
           activeImageId = item.id;
           imageUrl = v;
         }
+        // 입력 중 행을 다시 그리면 포커스가 끊기므로 썸네일만 갱신한다.
+        const thumb = row.querySelector(".thumbnail-preview");
+        if (thumb) {
+          thumb.src = v;
+          thumb.classList.toggle("hidden", !v);
+        }
+        renderPreview();
+      });
+      urlInput.addEventListener("change", () => {
+        // 원본 픽셀 크기는 mp4 비율/좌표 환산에 필요하다.
+        loadImageMeta(item);
         renderImageListUI();
         renderPreview();
+        renderStickyPanel();
+
+        renderTabSwitchPanel();
       });
       // remove row
       row.querySelector(".remove-row").addEventListener("click", () => {
@@ -861,6 +968,9 @@ ${anchorCode}
         }
         renderImageListUI();
         renderPreview();
+        renderStickyPanel();
+
+        renderTabSwitchPanel();
       });
       // clicking the row sets it active
       row.addEventListener("click", (e) => {
@@ -876,6 +986,93 @@ ${anchorCode}
     });
   }
 
+  // 탭 스크롤 세트: 탭 링크 영역 N개 + 섹션 마커 N개를 짝으로 생성
+  function addTabScrollSet(count) {
+    if (!imageElement || !imageRect) {
+      alert("먼저 이미지 URL을 입력하세요.");
+      return;
+    }
+    if (!imageRect.width || !imageRect.height) {
+      alert("이미지가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    const n = Math.max(2, Math.min(Number(count) || 2, 6));
+    const boxW = imageRect.width / n;
+    const boxH = Math.max(24, imageRect.height * 0.03);
+    const ids = Array.from({ length: n }, (_, i) =>
+      String.fromCharCode(97 + i),
+    ); // a, b, c ...
+
+    // 스티키 탭과 달리 탭 메뉴 이미지가 섹션마다 반복되므로,
+    // 섹션 N개 각각에 N개짜리 탭 메뉴 한 벌씩 = 링크 N×N 개를 만든다.
+    ids.forEach((sectionId, s) => {
+      const sectionY = imageRect.top + (imageRect.height / (n + 1)) * (s + 1);
+
+      // 섹션 마커 (세로 위치만 의미 있음)
+      anchors.push({
+        id: sectionId,
+        x: Math.round(imageRect.left + imageRect.width / 2),
+        y: Math.round(sectionY),
+        xp: 0.5,
+        yp: (sectionY - imageRect.top) / imageRect.height,
+      });
+
+      // 이 섹션 위치의 탭 메뉴 한 벌
+      ids.forEach((targetId, t) => {
+        const left = imageRect.left + boxW * t;
+        addArea("anchor", {
+          href: `#${targetId}`,
+          coords: {
+            x1: left,
+            y1: sectionY,
+            x2: left + boxW,
+            y2: sectionY + boxH,
+          },
+          coordsPct: {
+            x1: (left - imageRect.left) / imageRect.width,
+            y1: (sectionY - imageRect.top) / imageRect.height,
+            x2: (left - imageRect.left + boxW) / imageRect.width,
+            y2: (sectionY - imageRect.top + boxH) / imageRect.height,
+          },
+        });
+      });
+    });
+
+    const itIdx = imageListState.findIndex((x) => x.id === activeImageId);
+    if (itIdx >= 0) imageListState[itIdx].anchors = anchors;
+    renderAnchors();
+    renderAreas();
+    renderPreview();
+    generateBenefiaCode();
+  }
+
+  // 스티키 탭 설정 패널
+  function renderStickyPanel() {
+    // 코드 블록은 URL 이 입력된 이미지만으로 만들어지므로 그 개수를 기준으로 한다.
+    PubFeatures.renderStickyTabPanel(
+      stickyPanel,
+      stickyTab,
+      imageListState.filter((it) => it.url).length,
+      (_state, needsRerender) => {
+        if (needsRerender) renderStickyPanel();
+        generateBenefiaCode();
+      },
+    );
+  }
+
+  // 탭 콘텐츠 전환 설정 패널
+  function renderTabSwitchPanel() {
+    PubFeatures.renderTabSwitchPanel(
+      tabSwitchPanel,
+      tabSwitch,
+      imageListState.filter((it) => it.url).length,
+      (_state, needsRerender) => {
+        if (needsRerender) renderTabSwitchPanel();
+        generateBenefiaCode();
+      },
+    );
+  }
+
   // Reset Benefia tab
   function resetBenefia() {
     imageListState = [];
@@ -883,12 +1080,25 @@ ${anchorCode}
     areas = [];
     anchors = [];
     imageUrl = "";
+    stickyTab = {
+      enabled: false,
+      menuId: "menu",
+      maxWidth: 1180,
+      headerOffset: 0,
+      tabs: [],
+    };
+    tabSwitch = { groups: [] };
+    if (anchorOffsetEnabled) anchorOffsetEnabled.checked = false;
+    if (anchorOffsetInput) anchorOffsetInput.value = "0";
     if (benefiaImageRowsContainer) benefiaImageRowsContainer.innerHTML = "";
     benefiaPreview.innerHTML =
       '<p class="text-gray-500 text-center py-20">이미지 URL을 입력하세요</p>';
     benefiaCodeOutput.value = "";
     renderAreas();
     renderAnchors();
+    renderStickyPanel();
+
+    renderTabSwitchPanel();
   }
 
   // Event listeners
@@ -896,10 +1106,20 @@ ${anchorCode}
   addAreaAnchorBtn?.addEventListener("click", () => addArea("anchor"));
   addAreaCouponBtn?.addEventListener("click", () => addArea("coupon"));
   addAreaLinkBtn?.addEventListener("click", () => addArea("link"));
+  addAreaVideoBtn?.addEventListener("click", () => addArea("video"));
+  addTabScrollBtn?.addEventListener("click", () =>
+    addTabScrollSet(tabScrollCountInput ? tabScrollCountInput.value : 2),
+  );
+  anchorOffsetEnabled?.addEventListener("change", generateBenefiaCode);
+  anchorOffsetInput?.addEventListener("input", generateBenefiaCode);
   // Add anchor button handler
   function addAnchor() {
     if (!imageElement || !imageRect) {
       alert("먼저 이미지 URL을 입력하세요.");
+      return;
+    }
+    if (!imageRect.width || !imageRect.height) {
+      alert("이미지가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     const idx = anchors.length + 1;
@@ -917,9 +1137,6 @@ ${anchorCode}
   if (addAnchorBtn) {
     addAnchorBtn.addEventListener("click", addAnchor);
   }
-  if (addAnchorBtnSecondary) {
-    addAnchorBtnSecondary.addEventListener("click", addAnchor);
-  }
   copyBenefiaCodeBtn.addEventListener("click", () => {
     const originalText = copyBenefiaCodeBtn.textContent;
     copyWithCRLF(
@@ -932,17 +1149,19 @@ ${anchorCode}
       },
       () => {
         alert("복사에 실패했습니다. 수동으로 Ctrl+C를 사용해 주세요.");
-      }
+      },
     );
   });
   // 코드 생성 버튼: 현재 상태를 코드 텍스트에 반영
   if (generateBenefiaCodeBtn) {
     generateBenefiaCodeBtn.addEventListener("click", () => {
+      // 원래 문구를 기억했다가 되돌린다 (하드코딩하면 라벨이 바뀔 때 어긋난다)
+      const originalText = generateBenefiaCodeBtn.textContent;
       generateBenefiaCode();
       generateBenefiaCodeBtn.textContent = "생성 완료";
       setTimeout(
-        () => (generateBenefiaCodeBtn.textContent = "코드 생성"),
-        1500
+        () => (generateBenefiaCodeBtn.textContent = originalText),
+        1500,
       );
     });
   }
@@ -954,6 +1173,9 @@ ${anchorCode}
       if (!activeImageId) activeImageId = id;
       renderImageListUI();
       renderPreview();
+      renderStickyPanel();
+
+      renderTabSwitchPanel();
     });
   }
 
@@ -963,6 +1185,9 @@ ${anchorCode}
   // Initial render
   renderImageListUI();
   renderPreview();
+  renderStickyPanel();
+
+  renderTabSwitchPanel();
 }
 
 // Initialize the app when DOM is loaded
