@@ -1,7 +1,17 @@
 body {
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family:
+    "Pretendard",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol";
 }
 
 .canvas-container {
@@ -195,7 +205,9 @@ input[type="radio"]:checked + .platform-label {
     #b91c1c 100%
   );
   border: 3px solid #ffffff;
-  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.45), 0 6px 12px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 0 0 5px rgba(239, 68, 68, 0.45),
+    0 6px 12px rgba(0, 0, 0, 0.35);
   cursor: grab;
   z-index: 9999;
   animation: anchorPulse 1.5s ease-out infinite;
@@ -206,13 +218,19 @@ input[type="radio"]:checked + .platform-label {
 
 @keyframes anchorPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45), 0 6px 12px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0.45),
+      0 6px 12px rgba(0, 0, 0, 0.35);
   }
   70% {
-    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0), 0 6px 12px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 14px rgba(239, 68, 68, 0),
+      0 6px 12px rgba(0, 0, 0, 0.35);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 6px 12px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0),
+      0 6px 12px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -467,7 +485,9 @@ input[type="radio"]:checked + .platform-label {
     #b91c1c 100%
   );
   border: 3px solid #ffffff;
-  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.45), 0 6px 12px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 0 0 5px rgba(239, 68, 68, 0.45),
+    0 6px 12px rgba(0, 0, 0, 0.35);
   cursor: grab;
   z-index: 9999;
   animation: anchorPulse 1.5s ease-out infinite;
@@ -598,4 +618,86 @@ input[type="radio"]:checked + .platform-label {
   .skt-area-fields {
     grid-template-columns: 1fr;
   }
+}
+
+/* ------------------------------------------------------------------
+   신규 기능: 영상 오버레이 / 탭 스크롤 / 스티키 탭
+   ------------------------------------------------------------------ */
+
+/* 미리보기 위 영상 영역 */
+.benefia-video-box,
+.skt-video-box {
+  position: absolute;
+  border: 2px solid #e11d48; /* rose-600 */
+  background: rgba(225, 29, 72, 0.18);
+  z-index: 21;
+}
+.benefia-video-label,
+.skt-video-label {
+  position: absolute;
+  top: -14px;
+  left: -2px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+/* 앵커 핀에 딸린 섹션 가이드 라인 (가로 전체 폭임을 시각화) */
+.benefia-section-line,
+.skt-section-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 2px dashed rgba(124, 58, 237, 0.85);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* 영상 설정 입력 필드 */
+.video-fields select,
+.video-fields input[type="text"],
+.video-fields input[type="number"] {
+  width: 100%;
+}
+.video-fields input[type="text"] {
+  font-family: monospace;
+}
+
+/* 스티키 탭 설정 패널 */
+.sticky-tab-row {
+  border-color: #e5e7eb;
+}
+.sticky-tab-row input,
+.sticky-tab-row select {
+  font-size: 0.875rem;
+}
+
+/* 기능 구분선 — 좌측 설정 패널의 기능 블록(이미지 정보 / 탭 스크롤 /
+   스티키 탭 / 탭 콘텐츠 전환)을 시각적으로 분리한다.
+   위쪽 여백은 각 탭의 기존 레이아웃(mt-6, space-y-6)이 담당하므로
+   여기서는 구분선과 안쪽 여백만 준다. */
+.panel-section {
+  padding-top: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+}
+.panel-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.panel-section > h3::before {
+  content: "";
+  width: 4px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: #6366f1;
+}
+.panel-section.is-first {
+  padding-top: 0;
+  border-top: 0;
 }

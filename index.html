@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -89,29 +89,58 @@
                   >📱 모바일</label
                 >
               </div>
+              <div class="flex flex-wrap items-center gap-2 mt-3">
+                <label
+                  for="platform-max-width"
+                  class="text-sm text-gray-700 whitespace-nowrap"
+                >
+                  최대 폭 (<span id="platform-max-width-target">PC</span>)
+                </label>
+                <input
+                  type="number"
+                  id="platform-max-width"
+                  class="w-28 p-2 border border-gray-300 rounded"
+                  value="1200"
+                  min="320"
+                  step="10"
+                />
+                <span class="text-sm text-gray-500">px</span>
+                <span
+                  id="platform-max-width-hint"
+                  class="text-sm text-gray-500"
+                ></span>
+              </div>
             </div>
 
-            <h3 class="text-lg font-semibold mb-2 text-gray-800">
-              이미지 정보 입력
-            </h3>
-            <div id="image-list" class="space-y-4 mb-4">
-              <!-- Image input rows will be added by script.js -->
+            <div class="panel-section is-first">
+              <h3 class="text-lg font-semibold mb-2 text-gray-800">
+                이미지 정보 입력
+              </h3>
+              <div id="image-list" class="space-y-4 mb-4">
+                <!-- Image input rows will be added by script.js -->
+              </div>
+              <button
+                id="add-image-btn"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+              >
+                이미지 추가하기
+              </button>
             </div>
-            <button
-              id="add-image-btn"
-              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
-            >
-              이미지 추가하기
-            </button>
 
             <div id="image-map-section" class="mt-6 hidden">
-              <h2 class="text-2xl font-semibold mb-4 border-b pb-2">
+              <h2
+                id="mapper-title"
+                class="text-2xl font-semibold mb-4 border-b pb-2"
+              >
                 2. 버튼 영역 설정
               </h2>
               <p class="text-gray-600 mb-2">
-                아래 이미지에서 버튼의 <b class="text-blue-600">왼쪽 상단</b>과
-                <b class="text-blue-600">오른쪽 하단</b>을 차례대로 클릭하여
-                영역을 지정해주세요.
+                이미지 위의 파란 박스를
+                <b class="text-blue-600">드래그해 위치</b>를 잡고,
+                <b class="text-blue-600">모서리 핸들로 크기</b>를 맞춘 뒤
+                <b class="text-blue-600">적용</b>을 누르세요. 적용해야 저장되고,
+                해당 요소의 버튼이
+                <b class="text-green-600">✅ 영역 설정 완료</b>로 바뀝니다.
               </p>
               <div
                 id="canvas-container"
@@ -154,6 +183,98 @@
               </div>
             </div>
 
+            <div class="mt-6 panel-section">
+              <h3 class="text-lg font-semibold mb-2 text-gray-800">
+                탭 스크롤
+              </h3>
+              <p class="text-sm text-gray-500 mb-2">
+                탭 메뉴 이미지는 <b>섹션마다 반복</b>되므로, 시작 이미지부터
+                <b>탭 개수(N)만큼의 이미지</b>에 각각
+                <b>섹션 마커 1개 + 탭 링크 N개 = N+1개</b>의 요소가 생성됩니다.
+                <br />
+                예) 탭 2개 · 시작 이미지 #2 → 이미지 #2 와 #3 에 각각 요소 3개.
+                생성 후 각 요소의 <b>영역 설정하기</b>로 위치만 잡아주세요.
+              </p>
+              <p
+                class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mb-2"
+              >
+                ⚠️ <b>이미지에 탭 메뉴가 이미 그려져 있어야 합니다.</b> 생성기는
+                투명한 <b>클릭 영역만</b> 만들고 탭 메뉴를 그리지 않습니다. 각
+                섹션 이미지는 <b>「탭 메뉴 + 콘텐츠」가 한 장</b>으로 되어
+                있어야 하며, 활성 탭이 강조된 상태로 섹션마다 따로 제작해야
+                합니다.
+              </p>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="text-sm whitespace-nowrap">탭 개수</label>
+                <input
+                  type="number"
+                  id="tourism-tabscroll-count"
+                  class="w-20 p-2 border border-gray-300 rounded"
+                  value="2"
+                  min="2"
+                  max="6"
+                />
+                <label class="text-sm whitespace-nowrap">시작 이미지</label>
+                <select
+                  id="tourism-tabscroll-target"
+                  class="flex-grow p-2 border border-gray-300 rounded"
+                ></select>
+              </div>
+              <p class="text-sm text-gray-500 mt-1">
+                <b>시작 이미지</b> = 탭 스크롤이 시작되는
+                <b>첫 번째 이미지</b>입니다. 이 이미지가 <b>탭 1(섹션 a)</b>이
+                되고, 바로 다음 이미지가 탭 2(섹션 b), 그다음이 탭 3… 순으로
+                이어집니다. 앞쪽 이미지는 탭과 무관한 상단 공통 영역으로
+                남습니다.
+              </p>
+              <button
+                id="add-tourism-tabscroll"
+                class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+              >
+                + 탭 스크롤 세트 추가
+              </button>
+              <label class="flex items-center gap-2 mt-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  id="tourism-anchor-offset-enabled"
+                  class="w-4 h-4"
+                />
+                헤더 높이 보정 스크립트 포함
+                <input
+                  type="number"
+                  id="tourism-anchor-offset"
+                  class="w-20 p-1 border border-gray-300 rounded"
+                  value="0"
+                />
+                px
+              </label>
+            </div>
+
+            <div class="mt-6 panel-section">
+              <h3 class="text-lg font-semibold mb-2 text-gray-800">
+                스티키 탭
+              </h3>
+              <div
+                id="tourism-sticky-panel"
+                class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+              ></div>
+            </div>
+
+            <div class="mt-6 panel-section">
+              <h3 class="text-lg font-semibold mb-2 text-gray-800">
+                탭 콘텐츠 전환
+              </h3>
+              <p class="text-sm text-gray-500 mb-2">
+                탭을 누르면 <b>제자리에서 콘텐츠가 교체</b>됩니다 (스크롤 이동
+                없음). 스티키 탭과 동시에 켜면
+                <b>탭 콘텐츠 전환이 우선</b>합니다.
+              </p>
+              <div
+                id="tourism-tabswitch-panel"
+                class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+              ></div>
+            </div>
+
             <div class="mt-8">
               <button
                 id="generate-btn"
@@ -167,7 +288,7 @@
           <!-- Right Panel: Output -->
           <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">
-              3. 결과 확인
+              2. 결과 확인
             </h2>
             <div class="space-y-6">
               <div>
@@ -228,7 +349,7 @@
             </div>
 
             <div class="space-y-6">
-              <div>
+              <div class="panel-section is-first">
                 <h3 class="text-lg font-semibold mb-2">이미지 정보 입력</h3>
                 <div id="benefia-image-rows" class="space-y-4 mb-4"></div>
                 <button
@@ -239,10 +360,10 @@
                 </button>
               </div>
 
-              <div>
+              <div class="panel-section">
                 <h3 class="text-lg font-semibold mb-2">이미지맵 영역 추가</h3>
                 <div class="space-y-4">
-                  <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                       id="add-benefia-area-anchor"
                       class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg"
@@ -262,10 +383,10 @@
                       + 링크
                     </button>
                     <button
-                      id="add-benefia-anchor"
-                      class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg"
+                      id="add-benefia-area-video"
+                      class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg"
                     >
-                      + 앵커 추가
+                      + 영상
                     </button>
                   </div>
                   <div id="benefia-areas" class="space-y-3">
@@ -274,11 +395,15 @@
                 </div>
               </div>
 
-              <div>
+              <div class="panel-section">
                 <h3 class="text-lg font-semibold mb-2">앵커 영역 설정</h3>
                 <p class="text-sm text-gray-500 mb-2">
-                  앵커는 같은 페이지 내 이동 지점을 의미합니다. 아래 목록에서
-                  추가 후 미리보기의 보라색 포인트를 드래그해 위치를 조정하세요.
+                  앵커는 같은 페이지 내 이동 지점입니다.
+                  <b>영역이 아니라 시작점</b>이라 코드에는
+                  <span class="font-mono">width:100%; height:1px</span> 로
+                  나갑니다 — <b>세로 위치만</b> 맞추면 되고, 보통
+                  <b>탭메뉴 윗변</b>에 맞춥니다. 목록에서 추가한 뒤 미리보기의
+                  빨간 핀을 위아래로 드래그하세요(보라색 점선이 실제 이동 지점).
                 </p>
                 <div id="benefia-anchors" class="space-y-3">
                   <!-- Anchors list -->
@@ -289,6 +414,78 @@
                 >
                   + 새 앵커 추가
                 </button>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">탭 스크롤</h3>
+                <p class="text-sm text-gray-500 mb-2">
+                  탭 메뉴는 섹션마다 반복되므로 섹션 N개 × 탭 링크 N개가
+                  생성됩니다. 생성 후 미리보기에서 위치만 잡아주세요.
+                </p>
+                <p
+                  class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mb-2"
+                >
+                  ⚠️
+                  <b>이미지에 탭 메뉴가 이미 그려져 있어야 합니다.</b> 생성기는
+                  투명한 <b>클릭 영역만</b> 만들고 탭 메뉴를 그리지 않습니다.
+                  통이미지 안에 <b>섹션마다 탭 메뉴가 반복</b>되어 있어야 하며,
+                  각 위치에서 활성 탭이 강조된 상태로 제작해야 합니다.
+                </p>
+                <div class="flex items-center gap-2">
+                  <label class="text-sm whitespace-nowrap">탭 개수</label>
+                  <input
+                    type="number"
+                    id="benefia-tabscroll-count"
+                    class="w-20 p-2 border border-gray-300 rounded"
+                    value="2"
+                    min="2"
+                    max="6"
+                  />
+                  <button
+                    id="add-benefia-tabscroll"
+                    class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+                  >
+                    + 탭 스크롤 세트 추가
+                  </button>
+                </div>
+                <label
+                  class="flex items-center gap-2 mt-2 text-sm text-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    id="benefia-anchor-offset-enabled"
+                    class="w-4 h-4"
+                  />
+                  헤더 높이 보정 스크립트 포함
+                  <input
+                    type="number"
+                    id="benefia-anchor-offset"
+                    class="w-20 p-1 border border-gray-300 rounded"
+                    value="0"
+                  />
+                  px
+                </label>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">스티키 탭</h3>
+                <div
+                  id="benefia-sticky-panel"
+                  class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                ></div>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">탭 콘텐츠 전환</h3>
+                <p class="text-sm text-gray-500 mb-2">
+                  탭을 누르면 <b>제자리에서 콘텐츠가 교체</b>됩니다 (스크롤 이동
+                  없음). 스티키 탭과 동시에 켜면
+                  <b>탭 콘텐츠 전환이 우선</b>합니다.
+                </p>
+                <div
+                  id="benefia-tabswitch-panel"
+                  class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                ></div>
               </div>
 
               <div class="mt-8">
@@ -359,7 +556,7 @@
             </div>
 
             <div class="space-y-6">
-              <div>
+              <div class="panel-section is-first">
                 <h3 class="text-lg font-semibold mb-2">이미지 정보 입력</h3>
                 <div id="skt-image-rows" class="space-y-4 mb-4"></div>
                 <button
@@ -370,10 +567,10 @@
                 </button>
               </div>
 
-              <div>
+              <div class="panel-section">
                 <h3 class="text-lg font-semibold mb-2">이미지맵 영역 추가</h3>
                 <div class="space-y-4">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                       id="add-skt-area-anchor"
                       class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg"
@@ -386,6 +583,12 @@
                     >
                       + 링크
                     </button>
+                    <button
+                      id="add-skt-area-video"
+                      class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg"
+                    >
+                      + 영상
+                    </button>
                   </div>
                   <div id="skt-areas" class="space-y-3">
                     <!-- Areas will be added here -->
@@ -393,11 +596,15 @@
                 </div>
               </div>
 
-              <div>
+              <div class="panel-section">
                 <h3 class="text-lg font-semibold mb-2">앵커 영역 설정</h3>
                 <p class="text-sm text-gray-500 mb-2">
-                  앵커는 같은 페이지 내 이동 지점을 의미합니다. 아래 목록에서
-                  추가 후 미리보기의 보라색 포인트를 드래그해 위치를 조정하세요.
+                  앵커는 같은 페이지 내 이동 지점입니다.
+                  <b>영역이 아니라 시작점</b>이라 코드에는
+                  <span class="font-mono">width:100%; height:1px</span> 로
+                  나갑니다 — <b>세로 위치만</b> 맞추면 되고, 보통
+                  <b>탭메뉴 윗변</b>에 맞춥니다. 목록에서 추가한 뒤 미리보기의
+                  빨간 핀을 위아래로 드래그하세요(보라색 점선이 실제 이동 지점).
                 </p>
                 <div id="skt-anchors" class="space-y-3">
                   <!-- Anchors list -->
@@ -408,6 +615,78 @@
                 >
                   + 새 앵커 추가
                 </button>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">탭 스크롤</h3>
+                <p class="text-sm text-gray-500 mb-2">
+                  탭 메뉴는 섹션마다 반복되므로 섹션 N개 × 탭 링크 N개가
+                  생성됩니다. 생성 후 미리보기에서 위치만 잡아주세요.
+                </p>
+                <p
+                  class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mb-2"
+                >
+                  ⚠️
+                  <b>이미지에 탭 메뉴가 이미 그려져 있어야 합니다.</b> 생성기는
+                  투명한 <b>클릭 영역만</b> 만들고 탭 메뉴를 그리지 않습니다.
+                  통이미지 안에 <b>섹션마다 탭 메뉴가 반복</b>되어 있어야 하며,
+                  각 위치에서 활성 탭이 강조된 상태로 제작해야 합니다.
+                </p>
+                <div class="flex items-center gap-2">
+                  <label class="text-sm whitespace-nowrap">탭 개수</label>
+                  <input
+                    type="number"
+                    id="skt-tabscroll-count"
+                    class="w-20 p-2 border border-gray-300 rounded"
+                    value="2"
+                    min="2"
+                    max="6"
+                  />
+                  <button
+                    id="add-skt-tabscroll"
+                    class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+                  >
+                    + 탭 스크롤 세트 추가
+                  </button>
+                </div>
+                <label
+                  class="flex items-center gap-2 mt-2 text-sm text-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    id="skt-anchor-offset-enabled"
+                    class="w-4 h-4"
+                  />
+                  헤더 높이 보정 스크립트 포함
+                  <input
+                    type="number"
+                    id="skt-anchor-offset"
+                    class="w-20 p-1 border border-gray-300 rounded"
+                    value="0"
+                  />
+                  px
+                </label>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">스티키 탭</h3>
+                <div
+                  id="skt-sticky-panel"
+                  class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                ></div>
+              </div>
+
+              <div class="panel-section">
+                <h3 class="text-lg font-semibold mb-2">탭 콘텐츠 전환</h3>
+                <p class="text-sm text-gray-500 mb-2">
+                  탭을 누르면 <b>제자리에서 콘텐츠가 교체</b>됩니다 (스크롤 이동
+                  없음). 스티키 탭과 동시에 켜면
+                  <b>탭 콘텐츠 전환이 우선</b>합니다.
+                </p>
+                <div
+                  id="skt-tabswitch-panel"
+                  class="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                ></div>
               </div>
 
               <div class="mt-8">
@@ -465,6 +744,7 @@
 
     <!-- 외부 스크립트 연결, defer 속성으로 HTML 파싱 후 실행 -->
     <script src="js/common.js" defer></script>
+    <script src="js/features.js" defer></script>
     <script src="js/tourism.js" defer></script>
     <script src="js/benefia.js" defer></script>
     <script src="js/skt.js" defer></script>
