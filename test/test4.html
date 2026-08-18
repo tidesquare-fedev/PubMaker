@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>프로모션 pc</title>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      .tab-box.fix {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        width: 100%;
+        max-width: 750px;
+        margin: 0 auto;
+      }
+      .tab-box ul.on-off {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        box-sizing: border-box;
+      }
+      .tab-box ul.on-off li a {
+        display: block;
+      }
+      .tab-box img {
+        display: block;
+        width: 100%;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 시작 -->
+    <div
+      class="new-pb-container event-wrap"
+      style="position: relative; width: 100%; max-width: 750px"
+    >
+      <div style="position: relative">
+        <img
+          src="https://cdns.tourvis.com/promotion/test/tes_01.jpg"
+          alt=""
+          border="0"
+          style="display: block; width: 100%"
+        />
+      </div>
+      <div
+        id="menu"
+        class="tab-box"
+        style="
+          position: relative;
+          z-index: 5;
+          max-width: 750px;
+          margin: 0 auto;
+          line-height: 0;
+        "
+      >
+        <ul class="on-off">
+          <li class="on" style="width: 50%">
+            <a href="#a" class="tab-btn"
+              ><img
+                src="https://cdns.tourvis.com/promotion/test/tab_01_on.jpg"
+                style="max-width: 100%"
+                alt="항공"
+            /></a>
+          </li>
+          <li style="width: 50%">
+            <a href="#b" class="tab-btn"
+              ><img
+                src="https://cdns.tourvis.com/promotion/test/tab_02_off.jpg"
+                style="max-width: 100%"
+                alt="숙소/투어티켓"
+            /></a>
+          </li>
+        </ul>
+      </div>
+      <div style="position: relative">
+        <div id="a" class="tab-area">
+          <div style="position: relative">
+            <img
+              src="https://cdns.tourvis.com/promotion/test/tes_03.jpg"
+              alt=""
+              border="0"
+              style="display: block; width: 100%"
+            />
+          </div>
+        </div>
+        <div id="b" class="tab-area">
+          <div style="position: relative">
+            <img
+              src="https://cdns.tourvis.com/promotion/test/tes_05.jpg"
+              alt=""
+              border="0"
+              style="display: block; width: 100%"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 끝 -->
+    <script>
+      (function () {
+        var menu = document.getElementById("menu");
+        if (!menu) return;
+
+        var tabAreas = [].slice.call(document.querySelectorAll(".tab-area"));
+        var items = [].slice.call(menu.querySelectorAll("li"));
+        // 탭바가 고정될 때 생기는 레이아웃 점프를 스페이서로 흡수한다.
+        var spacer = document.createElement("div");
+        spacer.style.display = "none";
+        menu.parentNode.insertBefore(spacer, menu);
+
+        var baseTop = 0;
+        var fixed = false;
+        var activeIndex = -1;
+
+        function headerHeight() {
+          var h =
+            document.querySelector("header") ||
+            document.querySelector(".content-header") ||
+            document.querySelector(".sub-page-tit-area");
+          return h ? h.clientHeight : 0;
+        }
+
+        function swapOnOff(src, state) {
+          return String(src || "").replace(
+            /_(on|off)(\.[A-Za-z0-9]+)(\?.*)?$/,
+            "_" + state + "$2$3",
+          );
+        }
+
+        function setActive(idx) {
+          if (idx === activeIndex) return;
+          activeIndex = idx;
+          for (var i = 0; i < items.length; i++) {
+            var on = i === idx;
+            if (on) items[i].classList.add("on");
+            else items[i].classList.remove("on");
+            var img = items[i].querySelector("img");
+            if (!img) continue;
+            var src = img.getAttribute("src");
+            var next = swapOnOff(src, on ? "on" : "off");
+            if (next !== src) img.setAttribute("src", next);
+          }
+        }
+
+        function hold() {
+          if (fixed) return;
+          spacer.style.height = menu.offsetHeight + "px";
+          spacer.style.display = "block";
+          menu.classList.add("fix");
+          fixed = true;
+        }
+
+        function release() {
+          if (!fixed) return;
+          menu.classList.remove("fix");
+          menu.style.top = "";
+          spacer.style.display = "none";
+          fixed = false;
+        }
+
+        function measure() {
+          var wasFixed = fixed;
+          if (wasFixed) release();
+          baseTop = window.pageYOffset + menu.getBoundingClientRect().top;
+          if (wasFixed) hold();
+        }
+
+        function onScroll() {
+          var top = headerHeight();
+          if (window.pageYOffset >= baseTop - top) {
+            hold();
+            menu.style.top = top + "px";
+            var idx = 0;
+            for (var i = 0; i < tabAreas.length; i++) {
+              var y =
+                window.pageYOffset +
+                tabAreas[i].getBoundingClientRect().top -
+                menu.offsetHeight -
+                top -
+                10;
+              if (window.pageYOffset >= y) idx = i;
+            }
+            setActive(idx);
+          } else {
+            release();
+            setActive(0);
+          }
+        }
+
+        menu.addEventListener("click", function (e) {
+          var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+          if (!a) return;
+          e.preventDefault();
+          var target = document.querySelector(a.getAttribute("href"));
+          if (!target) return;
+          var y =
+            window.pageYOffset +
+            target.getBoundingClientRect().top -
+            menu.offsetHeight -
+            headerHeight();
+          window.scrollTo(0, y);
+        });
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", function () {
+          measure();
+          onScroll();
+        });
+        window.addEventListener("load", function () {
+          measure();
+          onScroll();
+        });
+
+        measure();
+        onScroll();
+      })();
+    </script>
+  </body>
+</html>
