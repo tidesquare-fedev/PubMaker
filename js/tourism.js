@@ -503,18 +503,14 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
                 </div>
             </div>
             <div class="appnotify-fields hidden">
-                <p class="text-sm text-gray-500">앱 안에서는 쿠키 <span class="font-mono">custId</span> 의 <b>회원번호</b>를 읽어 <span class="font-mono">tourvis://Preference?memberNo=</span> 로 알림 설정 화면을 엽니다.</p>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium text-gray-700">앱 설치 링크 <span class="text-gray-400">(선택)</span></label>
-                    <input type="text" placeholder="예: https://abr.ge/uysf2c" class="appnotify-install w-full p-2 border border-gray-300 rounded-md font-mono text-sm">
-                    <p class="text-sm text-gray-500 mt-1"><b>앱이 아닌 환경</b>(PC·모바일 웹)에서 누르면 이 주소로 이동합니다. 앱 설치를 유도하는 링크를 넣으세요.</p>
-                </div>
+                <label class="block text-sm font-medium text-gray-700">앱 설치 링크 <span class="text-gray-400">(앱이 아닐 때 보낼 주소)</span></label>
+                <input type="text" placeholder="예: https://abr.ge/uysf2c" class="appnotify-install w-full p-2 border border-gray-300 rounded-md font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">앱이 아닌 환경에서 보낼 주소입니다. 앱 설치를 유도하는 링크를 넣으세요.</p>
                 <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-2">
-                    ⚠️ <b>플랫폼에 따라 다른 코드가 나갑니다.</b>
-                    <br><b>📱 모바일</b> — 앱+로그인이면 알림 설정 화면, 그 밖에는 설치 링크로 이동
-                    (앱인데 미로그인이면 아무 동작 없음 — 이미 앱이라 설치를 권할 이유가 없습니다)
-                    <br><b>💻 PC</b> — 앱이 열릴 수 없으므로 <b>설치 링크로 가는 단순 링크</b>만 나갑니다.
-                    앱 판별 스크립트는 출력되지 않습니다
+                    ⚠️ <b>항공권 예약과 같은 방식입니다.</b> 생성기는
+                    <span class="font-mono">href="javascript:appAlarmSetting('설치링크')"</span> 만 넣고,
+                    앱 판별·알림 설정·미설치 시 이동은 <b>프런트에서 구현</b>합니다.
+                    <br>따라서 이 도구의 미리보기로는 동작을 검수할 수 없습니다.
                 </p>
             </div>
         </div>
@@ -970,18 +966,13 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
   }
 
   if (type === "appnotify") {
-    // 앱 설치 링크를 href 에 두어, 앱이 아닐 때는 스크립트 없이도 그리로 가게 한다.
+    // 항공권 예약과 같은 방식 — 동작은 프런트가 구현하고 생성기는 약속된 함수만 넘긴다.
+    // 인자는 앱이 아닌 환경에서 보낼 URL (앱 설치 링크).
     const installUrl = configRow
       .querySelector(".appnotify-install")
       .value.trim();
-    const href = installUrl
-      ? PubFeatures.escAttr(installUrl)
-      : "javascript:void(0)";
-    // PC 는 앱이 열릴 수 없으므로 딥링크 판별 없이 단순 링크로 끝낸다.
-    if (platform === "pc") {
-      return `<a data-map-anchor="true" style="${style}" href="${href}" target="_blank">앱 알림 설정</a>`;
-    }
-    return `<a data-map-anchor="true" style="${style}" href="${href}" onclick="return pubAppNotify();">앱 알림 설정</a>`;
+    const arg = PubFeatures.escAttr(PubFeatures.jsString(installUrl));
+    return `<a data-map-anchor="true" style="${style}" href="javascript:appAlarmSetting('${arg}');">앱 알림 설정</a>`;
   }
 
   const linkUrl = configRow.querySelector(".link-url").value;
@@ -993,7 +984,6 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
 function buildImageBlocks(platform, skipMissingCoords) {
   const blocks = [];
   let hasAnchor = false;
-  let hasAppNotify = false;
 
   imageList.querySelectorAll(".image-row").forEach((row) => {
     const imageUrl = row.querySelector(".image-url").value.trim();
@@ -1013,7 +1003,6 @@ function buildImageBlocks(platform, skipMissingCoords) {
       if (!configRow) return;
       const btnType = configRow.querySelector(".button-type").value;
       if (btnType === "anchor") hasAnchor = true;
-      if (btnType === "appnotify") hasAppNotify = true;
       const tag = buildOverlayTag(configRow, btn, platform, hasSidePadding);
       if (tag) contentInsideDiv += `\n        ${tag}`;
     });
@@ -1031,15 +1020,12 @@ function buildImageBlocks(platform, skipMissingCoords) {
     );
   });
 
-  return { blocks, hasAnchor, hasAppNotify };
+  return { blocks, hasAnchor };
 }
 
 // 전체 문서 조립 (스티키 탭 / 앵커 보정 스크립트 포함)
 function buildFullHtml(platform, skipMissingCoords) {
-  const { blocks, hasAnchor, hasAppNotify } = buildImageBlocks(
-    platform,
-    skipMissingCoords,
-  );
+  const { blocks, hasAnchor } = buildImageBlocks(platform, skipMissingCoords);
 
   // 두 기능은 같은 블록 범위를 감싸므로 동시에 적용할 수 없다. 콘텐츠 전환이 우선.
   const switchOn = PubFeatures.hasTabSwitch(tourismTabSwitch, blocks.length);
@@ -1065,11 +1051,6 @@ function buildFullHtml(platform, skipMissingCoords) {
     tailExtras.push(PubFeatures.buildStickyTabScript(tourismSticky));
   } else if (hasAnchor) {
     headExtras.push(PubFeatures.SMOOTH_SCROLL_STYLE);
-  }
-  // 앱 알림 설정 버튼이 있으면 공용 함수를 한 번만 출력한다.
-  // PC 는 앱이 열릴 수 없어 단순 링크로 끝나므로 스크립트가 필요 없다.
-  if (hasAppNotify && platform !== "pc") {
-    tailExtras.push(PubFeatures.buildAppNotifyScript());
   }
   if (!stickyOn && anchorOffsetEnabled?.checked) {
     tailExtras.push(
