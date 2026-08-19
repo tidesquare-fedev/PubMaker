@@ -914,15 +914,16 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
 
   if (type === "appNotification") {
     const onclick =
+      "try { " +
       "var agent = navigator.userAgent.toLowerCase(); " +
       "var isApp = agent.indexOf('tourvis_') > -1; " +
       "var isIOS = agent.indexOf('iphone') > -1 || agent.indexOf('ipad') > -1 || agent.indexOf('ipod') > -1; " +
       "var isAndroid = agent.match('android') != null; " +
-      "var memberNo = getCookie('custId') == null ? '' : getCookie('custId'); " +
+      "var memberNo = typeof getCookie === 'function' && getCookie('custId') != null ? getCookie('custId') : ''; " +
       "if (isApp && memberNo != '') { " +
-      "if (isIOS) { webkit.messageHandlers.observe.postMessage('tourvis://Preference?memberNo=' + memberNo); } " +
+      "if (isIOS && typeof webkit !== 'undefined' && webkit.messageHandlers && webkit.messageHandlers.observe) { webkit.messageHandlers.observe.postMessage('tourvis://Preference?memberNo=' + memberNo); } " +
       "else if (isAndroid) { window.location = 'tourvis://Preference?memberNo=' + memberNo; } " +
-      "} return false;";
+      "} } catch (e) {} return false;";
     return `<a data-map-anchor="true" style="${style}" href="javascript:void(0)" onclick="${onclick}">앱 알림 설정</a>`;
   }
 

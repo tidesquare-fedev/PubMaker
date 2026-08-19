@@ -526,11 +526,14 @@ tourOut = $("#code-output").value;
 check(
   "앱 알림 설정 onclick 출력",
   tourOut.includes('href="javascript:void(0)"') &&
-    tourOut.includes('onclick="var agent = navigator.userAgent.toLowerCase();') &&
+    tourOut.includes('onclick="try { var agent = navigator.userAgent.toLowerCase();') &&
     tourOut.includes("agent.indexOf('tourvis_') > -1") &&
+    tourOut.includes("typeof getCookie === 'function'") &&
     tourOut.includes("getCookie('custId')") &&
     tourOut.includes("tourvis://Preference?memberNo=") &&
+    tourOut.includes("typeof webkit !== 'undefined'") &&
     tourOut.includes("webkit.messageHandlers.observe.postMessage") &&
+    tourOut.includes("catch (e) {}") &&
     tourOut.includes("window.location ="),
   tourOut.match(/<a[^>]+>앱 알림 설정<\/a>/)?.[0],
 );
