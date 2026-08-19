@@ -450,6 +450,7 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
             <label class="block text-sm font-medium text-gray-700">요소 타입</label>
             <select class="button-type w-full p-2 border border-gray-300 rounded-md">
                 <option value="booking">항공권 예약하기</option>
+                <option value="appNotification">앱 알림 설정</option>
                 <option value="link">단순 링크</option>
                 <option value="anchor">앵커 이동 (탭)</option>
                 <option value="section">섹션 시작점 (앵커 대상)</option>
@@ -566,6 +567,7 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
 
 const ELEMENT_TYPE_LABEL = {
   booking: "항공권 예약",
+  appNotification: "앱 알림 설정",
   link: "링크",
   anchor: "앵커 이동",
   section: "섹션 시작점",
@@ -908,6 +910,21 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
     const airlineCode = configRow.querySelector(".airline-code").value;
     const jsFunc = platform === "pc" ? "promoFixPop" : "compactPopOpen";
     return `<a data-map-anchor="true" style="${style}" href="javascript:${jsFunc}('${airlineCode}');">항공권 예약하기</a>`;
+  }
+
+  if (type === "appNotification") {
+    const onclick =
+      "try { " +
+      "var agent = navigator.userAgent.toLowerCase(); " +
+      "var isApp = agent.indexOf('tourvis_') > -1; " +
+      "var isIOS = agent.indexOf('iphone') > -1 || agent.indexOf('ipad') > -1 || agent.indexOf('ipod') > -1; " +
+      "var isAndroid = agent.match('android') != null; " +
+      "var memberNo = typeof getCookie === 'function' && getCookie('custId') != null ? getCookie('custId') : ''; " +
+      "if (isApp && memberNo != '') { " +
+      "if (isIOS && typeof webkit !== 'undefined' && webkit.messageHandlers && webkit.messageHandlers.observe) { webkit.messageHandlers.observe.postMessage('tourvis://Preference?memberNo=' + memberNo); } " +
+      "else if (isAndroid) { window.location = 'tourvis://Preference?memberNo=' + memberNo; } " +
+      "} } catch (e) {} return false;";
+    return `<a data-map-anchor="true" style="${style}" href="javascript:void(0)" onclick="${onclick}">앱 알림 설정</a>`;
   }
 
   if (type === "anchor") {
