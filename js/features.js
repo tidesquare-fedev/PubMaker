@@ -225,13 +225,19 @@ const PubFeatures = (() => {
   // 프리비아(priviatravel://)는 규격이 다르지만 이 생성기의 대상이 아니라 넣지 않는다.
 
   /**
-   * 앱 알림 설정 스크립트 (문서에 한 번만 출력).
-   * 버튼마다 다를 수 있는 값은 안내 문구뿐이라 그것만 인자로 받는다.
+   * 앱 알림 설정 스크립트 (모바일 코드에만 한 번 출력).
+   *
+   * 버튼은 href 에 앱 설치 링크를 들고 있고, 이 함수는 앱 안일 때만 끼어들어
+   * 딥링크를 쏘고 false 를 돌려 href 이동을 막는다. 앱이 아니면 true 를 돌려
+   * 브라우저가 그대로 설치 링크로 가게 둔다.
+   *
+   * 앱은 모바일 전용이라 PC 페이지가 앱 안에서 열릴 일이 없다.
+   * 그래서 PC 는 이 스크립트 없이 설치 링크로 가는 단순 링크만 출력한다.
    */
   function buildAppNotifyScript() {
     return `<script>
-// 앱 알림 설정 — 투어비스 앱 안에서만 동작합니다 (웹 브라우저에서는 안내만 표시).
-function pubAppNotify(message) {
+// 앱 알림 설정 — 앱 안이면 알림 설정 화면을 열고, 아니면 href(앱 설치 링크)로 갑니다.
+function pubAppNotify() {
   // 페이지에 getCookie 가 있으면 그것을 쓰고, 없으면 직접 읽는다.
   function readCookie(name) {
     if (typeof getCookie === 'function') {
@@ -246,13 +252,15 @@ function pubAppNotify(message) {
   var isApp = agent.indexOf('tourvis_') > -1;
   var isIOS = agent.indexOf('iphone') > -1 || agent.indexOf('ipad') > -1 || agent.indexOf('ipod') > -1;
   var isAndroid = agent.indexOf('android') > -1;
-  var memberNo = readCookie('custId');
   var scheme = 'tourvis://Preference?memberNo=';
 
-  if (!isApp || memberNo === '') {
-    if (message) alert(message);
-    return;
-  }
+  // 앱이 아니면 href 로 진행 — 앱 설치 링크로 이동한다.
+  if (!isApp) return true;
+
+  // 앱 안인데 미로그인이면 회원번호가 없다. 이미 앱이므로 설치 링크로 보내지 않는다.
+  var memberNo = readCookie('custId');
+  if (memberNo === '') return false;
+
   if (isIOS) {
     // 앱이 주입하는 핸들러. 없으면 조용히 넘어간다(스크립트 오류 방지).
     if (window.webkit && webkit.messageHandlers && webkit.messageHandlers.observe) {
@@ -261,6 +269,7 @@ function pubAppNotify(message) {
   } else if (isAndroid) {
     window.location = scheme + memberNo;
   }
+  return false;
 }
 <\/script>`;
   }

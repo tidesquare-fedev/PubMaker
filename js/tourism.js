@@ -503,15 +503,18 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
                 </div>
             </div>
             <div class="appnotify-fields hidden">
-                <p class="text-sm text-gray-500">쿠키 <span class="font-mono">custId</span> 에서 <b>회원번호</b>를 읽어 <span class="font-mono">tourvis://Preference?memberNo=</span> 뒤에 붙입니다. 따로 입력할 값은 없습니다.</p>
+                <p class="text-sm text-gray-500">앱 안에서는 쿠키 <span class="font-mono">custId</span> 의 <b>회원번호</b>를 읽어 <span class="font-mono">tourvis://Preference?memberNo=</span> 로 알림 설정 화면을 엽니다.</p>
                 <div class="mt-2">
-                    <label class="block text-sm font-medium text-gray-700">앱이 아닐 때 안내 문구 <span class="text-gray-400">(선택)</span></label>
-                    <input type="text" placeholder="비우면 아무 동작도 하지 않습니다" class="appnotify-message w-full p-2 border border-gray-300 rounded-md">
+                    <label class="block text-sm font-medium text-gray-700">앱 설치 링크 <span class="text-gray-400">(선택)</span></label>
+                    <input type="text" placeholder="예: https://abr.ge/uysf2c" class="appnotify-install w-full p-2 border border-gray-300 rounded-md font-mono text-sm">
+                    <p class="text-sm text-gray-500 mt-1"><b>앱이 아닌 환경</b>(PC·모바일 웹)에서 누르면 이 주소로 이동합니다. 앱 설치를 유도하는 링크를 넣으세요.</p>
                 </div>
                 <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-2">
-                    ⚠️ <b>투어비스 앱 안에서만 동작합니다.</b> PC·모바일 웹 브라우저에는 딥링크를 처리할
-                    주체가 없어 반응이 없습니다. 위 안내 문구를 넣어두면 그때 알림창이 뜨므로 검수에 도움이 됩니다.
-                    <br>로그인하지 않아(쿠키가 비어) 회원번호가 없을 때도 같습니다.
+                    ⚠️ <b>플랫폼에 따라 다른 코드가 나갑니다.</b>
+                    <br><b>📱 모바일</b> — 앱+로그인이면 알림 설정 화면, 그 밖에는 설치 링크로 이동
+                    (앱인데 미로그인이면 아무 동작 없음 — 이미 앱이라 설치를 권할 이유가 없습니다)
+                    <br><b>💻 PC</b> — 앱이 열릴 수 없으므로 <b>설치 링크로 가는 단순 링크</b>만 나갑니다.
+                    앱 판별 스크립트는 출력되지 않습니다
                 </p>
             </div>
         </div>
@@ -965,10 +968,18 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
   }
 
   if (type === "appnotify") {
-    // 회원번호 쿠키(custId)는 고정이라 안내 문구만 넘긴다.
-    const message = configRow.querySelector(".appnotify-message").value.trim();
-    const arg = `'${PubFeatures.jsString(message)}'`;
-    return `<a data-map-anchor="true" style="${style}" href="javascript:void(0)" onclick="pubAppNotify(${arg}); return false;">앱 알림 설정</a>`;
+    // 앱 설치 링크를 href 에 두어, 앱이 아닐 때는 스크립트 없이도 그리로 가게 한다.
+    const installUrl = configRow
+      .querySelector(".appnotify-install")
+      .value.trim();
+    const href = installUrl
+      ? PubFeatures.escAttr(installUrl)
+      : "javascript:void(0)";
+    // PC 는 앱이 열릴 수 없으므로 딥링크 판별 없이 단순 링크로 끝낸다.
+    if (platform === "pc") {
+      return `<a data-map-anchor="true" style="${style}" href="${href}" target="_blank">앱 알림 설정</a>`;
+    }
+    return `<a data-map-anchor="true" style="${style}" href="${href}" onclick="return pubAppNotify();">앱 알림 설정</a>`;
   }
 
   const linkUrl = configRow.querySelector(".link-url").value;
@@ -1053,8 +1064,11 @@ function buildFullHtml(platform, skipMissingCoords) {
   } else if (hasAnchor) {
     headExtras.push(PubFeatures.SMOOTH_SCROLL_STYLE);
   }
-  // 앱 알림 설정 버튼이 하나라도 있으면 공용 함수를 한 번만 출력한다.
-  if (hasAppNotify) tailExtras.push(PubFeatures.buildAppNotifyScript());
+  // 앱 알림 설정 버튼이 있으면 공용 함수를 한 번만 출력한다.
+  // PC 는 앱이 열릴 수 없어 단순 링크로 끝나므로 스크립트가 필요 없다.
+  if (hasAppNotify && platform !== "pc") {
+    tailExtras.push(PubFeatures.buildAppNotifyScript());
+  }
   if (!stickyOn && anchorOffsetEnabled?.checked) {
     tailExtras.push(
       PubFeatures.buildAnchorOffsetScript(Number(anchorOffsetInput.value) || 0),
