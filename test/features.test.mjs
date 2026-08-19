@@ -180,4 +180,53 @@ try {
   check("앵커 보정 스크립트 문법", false, e.message);
 }
 
+section("앱 알림 설정");
+const notify = PubFeatures.buildAppNotifyScript();
+try {
+  new Function(stripTags(notify));
+  check("앱 알림 스크립트 문법", true);
+} catch (e) {
+  check("앱 알림 스크립트 문법", false, e.message);
+}
+// 사내 하이브리드 앱 가이드의 스킴과 정확히 일치해야 한다.
+check("투어비스 스킴", notify.includes("'tourvis://Preference?memberNo='"));
+check("투어비스 UA 식별자", notify.includes("'tourvis_'"));
+check("회원번호 쿠키 고정", notify.includes("readCookie('custId')"));
+// 프리비아는 생성기 대상이 아니다.
+check("프리비아 스킴은 없다", !notify.includes("priviatravel://"));
+check(
+  "iOS 는 webkit 핸들러로 전달",
+  notify.includes("webkit.messageHandlers.observe.postMessage"),
+);
+check(
+  "안드로이드는 window.location 이동",
+  notify.includes("window.location ="),
+);
+check(
+  "webkit 핸들러가 없으면 건너뛴다 (스크립트 오류 방지)",
+  notify.includes("window.webkit && webkit.messageHandlers"),
+);
+check(
+  "페이지의 getCookie 를 우선 사용",
+  notify.includes("typeof getCookie === 'function'"),
+);
+
+// 인라인 onclick 안에 들어가므로 따옴표·역슬래시·줄바꿈이 깨지면 안 된다.
+check(
+  "jsString: 작은따옴표 이스케이프",
+  PubFeatures.jsString(`it's`) === `it\\'s`,
+  PubFeatures.jsString(`it's`),
+);
+check(
+  "jsString: 역슬래시 이스케이프",
+  PubFeatures.jsString(`a\\b`) === `a\\\\b`,
+  PubFeatures.jsString(`a\\b`),
+);
+check(
+  "jsString: 줄바꿈 제거",
+  PubFeatures.jsString("a\nb") === "a b",
+  PubFeatures.jsString("a\nb"),
+);
+check("jsString: null 은 빈 문자열", PubFeatures.jsString(null) === "");
+
 summary();

@@ -377,6 +377,90 @@ check(
 );
 check("인덱스 재부여", remaining[0].dataset.buttonIndex === "0");
 
+section("투어비스 — 앱 알림 설정");
+tourRow.querySelector(".buttons-container").innerHTML = "";
+tourRow.dataset.buttons = JSON.stringify([]);
+tourRow.querySelector(".add-new-button-btn").click();
+const anRow = tourRow.querySelector(".button-config-row");
+check(
+  "요소 타입에 '앱 알림 설정' 이 있다",
+  !!anRow.querySelector('.button-type option[value="appnotify"]'),
+);
+setValue(anRow.querySelector(".button-type"), "appnotify", "change");
+check(
+  "선택 시 전용 입력만 노출",
+  !anRow.querySelector(".appnotify-fields").classList.contains("hidden") &&
+    anRow.querySelector(".booking-fields").classList.contains("hidden") &&
+    anRow.querySelector(".video-fields").classList.contains("hidden"),
+);
+// 회원번호 쿠키(custId)와 브랜드는 고정이라 입력받지 않는다.
+check("쿠키 이름 입력칸은 없다", !anRow.querySelector(".appnotify-cookie"));
+check("브랜드 선택은 없다", !anRow.querySelector(".appnotify-brand"));
+check(
+  "입력은 안내 문구 하나뿐",
+  anRow.querySelectorAll(".appnotify-fields input").length === 1 &&
+    !!anRow.querySelector(".appnotify-message"),
+);
+check(
+  "요소 제목에 종류 표시",
+  anRow.querySelector(".config-row-title").textContent.includes("앱 알림 설정"),
+  anRow.querySelector(".config-row-title").textContent,
+);
+
+// 좌표는 매퍼 없이 주입한다 (영역 지정 자체는 다른 절에서 검증).
+tourRow.dataset.buttons = JSON.stringify([
+  {
+    coords: {
+      left: "10.00",
+      bottom: "20.00",
+      top: "70.00",
+      width: "80.00",
+      height: "10.00",
+      nW: 800,
+      nH: 2000,
+    },
+  },
+]);
+setValue(anRow.querySelector(".appnotify-message"), "앱에서 이용해 주세요");
+$("#generate-btn").click();
+let anOut = $("#code-output").value;
+check(
+  "오버레이가 pubAppNotify 를 호출한다",
+  anOut.includes(
+    `onclick="pubAppNotify('앱에서 이용해 주세요'); return false;"`,
+  ),
+  anOut.match(/onclick="[^"]*"/)?.[0],
+);
+check(
+  "회원번호 쿠키는 스크립트에 고정",
+  anOut.includes(`readCookie('custId')`),
+);
+check(
+  "href 는 javascript:void(0)",
+  anOut.includes('href="javascript:void(0)"'),
+);
+check(
+  "공용 스크립트가 한 번만 출력된다",
+  (anOut.match(/function pubAppNotify/g) || []).length === 1,
+);
+
+// 안내 문구를 비우면 빈 인자로 나가고, 그때는 아무 동작도 하지 않는다.
+setValue(anRow.querySelector(".appnotify-message"), "");
+$("#generate-btn").click();
+check(
+  "안내 문구를 비우면 빈 인자",
+  $("#code-output").value.includes(`onclick="pubAppNotify(''); return false;"`),
+  $("#code-output").value.match(/onclick="[^"]*"/)?.[0],
+);
+// 앱 알림 버튼이 없으면 스크립트도 나오지 않아야 한다.
+setValue(anRow.querySelector(".button-type"), "link", "change");
+setValue(anRow.querySelector(".link-url"), "https://example.com");
+$("#generate-btn").click();
+check(
+  "앱 알림 요소가 없으면 스크립트도 없다",
+  !$("#code-output").value.includes("pubAppNotify"),
+);
+
 // 영역 설정 버튼 상태 — 추가 직후 미설정 → '적용' 후 완료
 section("투어비스 — 영역 설정 상태 표시");
 tourRow.querySelector(".buttons-container").innerHTML = "";

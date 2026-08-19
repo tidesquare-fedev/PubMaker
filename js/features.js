@@ -212,6 +212,67 @@ const PubFeatures = (() => {
 <\/script>`;
   }
 
+  // --------------------------------------------------------- 앱 알림 설정
+  // 투어비스 하이브리드 앱 안에서 열렸을 때만 동작하는 알림 설정 딥링크.
+  // 웹 브라우저에서는 스킴을 처리할 주체가 없으므로 아무 일도 일어나지 않는다.
+  //
+  // 규격 (사내 하이브리드 앱 웹 개발 가이드)
+  //   UA 식별자   tourvis_
+  //   회원번호    쿠키 custId (고정)
+  //   안드로이드  window.location = 'tourvis://Preference?memberNo=' + 회원번호
+  //   iOS         webkit.messageHandlers.observe.postMessage(같은 스킴)
+  //
+  // 프리비아(priviatravel://)는 규격이 다르지만 이 생성기의 대상이 아니라 넣지 않는다.
+
+  /**
+   * 앱 알림 설정 스크립트 (문서에 한 번만 출력).
+   * 버튼마다 다를 수 있는 값은 안내 문구뿐이라 그것만 인자로 받는다.
+   */
+  function buildAppNotifyScript() {
+    return `<script>
+// 앱 알림 설정 — 투어비스 앱 안에서만 동작합니다 (웹 브라우저에서는 안내만 표시).
+function pubAppNotify(message) {
+  // 페이지에 getCookie 가 있으면 그것을 쓰고, 없으면 직접 읽는다.
+  function readCookie(name) {
+    if (typeof getCookie === 'function') {
+      var v = getCookie(name);
+      return v == null ? '' : v;
+    }
+    var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  var agent = navigator.userAgent.toLowerCase();
+  var isApp = agent.indexOf('tourvis_') > -1;
+  var isIOS = agent.indexOf('iphone') > -1 || agent.indexOf('ipad') > -1 || agent.indexOf('ipod') > -1;
+  var isAndroid = agent.indexOf('android') > -1;
+  var memberNo = readCookie('custId');
+  var scheme = 'tourvis://Preference?memberNo=';
+
+  if (!isApp || memberNo === '') {
+    if (message) alert(message);
+    return;
+  }
+  if (isIOS) {
+    // 앱이 주입하는 핸들러. 없으면 조용히 넘어간다(스크립트 오류 방지).
+    if (window.webkit && webkit.messageHandlers && webkit.messageHandlers.observe) {
+      webkit.messageHandlers.observe.postMessage(scheme + memberNo);
+    }
+  } else if (isAndroid) {
+    window.location = scheme + memberNo;
+  }
+}
+<\/script>`;
+  }
+
+  // 인라인 onclick 안에 들어갈 JS 문자열 리터럴 이스케이프
+  function jsString(value) {
+    return String(value == null ? "" : value)
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/[\r\n]+/g, " ");
+  }
+
   // ------------------------------------------------------------- 스티키 탭
 
   // 파일명 끝의 _on / _off 만 안전하게 치환 (경로 중간의 '_' 를 건드리지 않는다)
@@ -1006,6 +1067,8 @@ ${indent}</div>`;
     SMOOTH_SCROLL_STYLE,
     buildSectionMarker,
     buildAnchorOffsetScript,
+    buildAppNotifyScript,
+    jsString,
     swapOnOff,
     buildStickyTabStyle,
     buildStickyTabBar,

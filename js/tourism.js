@@ -454,6 +454,7 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
                 <option value="anchor">앵커 이동 (탭)</option>
                 <option value="section">섹션 시작점 (앵커 대상)</option>
                 <option value="video">영상</option>
+                <option value="appnotify">앱 알림 설정</option>
             </select>
             <div class="booking-fields">
                 <label class="block text-sm font-medium text-gray-700">항공사 코드</label>
@@ -501,6 +502,18 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
                     <label class="flex items-center gap-1"><input type="checkbox" class="video-controls"> 컨트롤 표시</label>
                 </div>
             </div>
+            <div class="appnotify-fields hidden">
+                <p class="text-sm text-gray-500">쿠키 <span class="font-mono">custId</span> 에서 <b>회원번호</b>를 읽어 <span class="font-mono">tourvis://Preference?memberNo=</span> 뒤에 붙입니다. 따로 입력할 값은 없습니다.</p>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium text-gray-700">앱이 아닐 때 안내 문구 <span class="text-gray-400">(선택)</span></label>
+                    <input type="text" placeholder="비우면 아무 동작도 하지 않습니다" class="appnotify-message w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-2">
+                    ⚠️ <b>투어비스 앱 안에서만 동작합니다.</b> PC·모바일 웹 브라우저에는 딥링크를 처리할
+                    주체가 없어 반응이 없습니다. 위 안내 문구를 넣어두면 그때 알림창이 뜨므로 검수에 도움이 됩니다.
+                    <br>로그인하지 않아(쿠키가 비어) 회원번호가 없을 때도 같습니다.
+                </p>
+            </div>
         </div>
     `;
   buttonsContainer.appendChild(buttonDiv);
@@ -522,7 +535,7 @@ function addButtonConfigRow(imageRow, buttonIndex, presetType = "booking") {
   });
   buttonDiv
     .querySelectorAll(
-      ".video-fields input, .anchor-fields input, .section-fields input",
+      ".video-fields input, .anchor-fields input, .section-fields input, .appnotify-fields input",
     )
     .forEach((input) => {
       input.addEventListener(
@@ -570,6 +583,7 @@ const ELEMENT_TYPE_LABEL = {
   anchor: "앵커 이동",
   section: "섹션 시작점",
   video: "영상",
+  appnotify: "앱 알림 설정",
 };
 
 // 요소 제목에 종류와 대상 ID 를 드러낸다.
@@ -606,6 +620,7 @@ function applyButtonTypeVisibility(buttonRow, type) {
     anchor: ".anchor-fields",
     section: ".section-fields",
     video: ".video-fields",
+    appnotify: ".appnotify-fields",
   };
   Object.entries(groups).forEach(([key, selector]) => {
     buttonRow.querySelector(selector).classList.toggle("hidden", key !== type);
@@ -949,6 +964,13 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
     );
   }
 
+  if (type === "appnotify") {
+    // 회원번호 쿠키(custId)는 고정이라 안내 문구만 넘긴다.
+    const message = configRow.querySelector(".appnotify-message").value.trim();
+    const arg = `'${PubFeatures.jsString(message)}'`;
+    return `<a data-map-anchor="true" style="${style}" href="javascript:void(0)" onclick="pubAppNotify(${arg}); return false;">앱 알림 설정</a>`;
+  }
+
   const linkUrl = configRow.querySelector(".link-url").value;
   const linkTarget = configRow.querySelector(".link-target")?.value || "_blank";
   return `<a data-map-anchor="true" style="${style}" href="${linkUrl}" target="${linkTarget}">단순 링크</a>`;
@@ -958,6 +980,7 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
 function buildImageBlocks(platform, skipMissingCoords) {
   const blocks = [];
   let hasAnchor = false;
+  let hasAppNotify = false;
 
   imageList.querySelectorAll(".image-row").forEach((row) => {
     const imageUrl = row.querySelector(".image-url").value.trim();
@@ -975,9 +998,9 @@ function buildImageBlocks(platform, skipMissingCoords) {
       if (skipMissingCoords && !btn.coords) return;
       const configRow = buttonConfigRows[index];
       if (!configRow) return;
-      if (configRow.querySelector(".button-type").value === "anchor") {
-        hasAnchor = true;
-      }
+      const btnType = configRow.querySelector(".button-type").value;
+      if (btnType === "anchor") hasAnchor = true;
+      if (btnType === "appnotify") hasAppNotify = true;
       const tag = buildOverlayTag(configRow, btn, platform, hasSidePadding);
       if (tag) contentInsideDiv += `\n        ${tag}`;
     });
@@ -995,12 +1018,15 @@ function buildImageBlocks(platform, skipMissingCoords) {
     );
   });
 
-  return { blocks, hasAnchor };
+  return { blocks, hasAnchor, hasAppNotify };
 }
 
 // 전체 문서 조립 (스티키 탭 / 앵커 보정 스크립트 포함)
 function buildFullHtml(platform, skipMissingCoords) {
-  const { blocks, hasAnchor } = buildImageBlocks(platform, skipMissingCoords);
+  const { blocks, hasAnchor, hasAppNotify } = buildImageBlocks(
+    platform,
+    skipMissingCoords,
+  );
 
   // 두 기능은 같은 블록 범위를 감싸므로 동시에 적용할 수 없다. 콘텐츠 전환이 우선.
   const switchOn = PubFeatures.hasTabSwitch(tourismTabSwitch, blocks.length);
@@ -1027,6 +1053,8 @@ function buildFullHtml(platform, skipMissingCoords) {
   } else if (hasAnchor) {
     headExtras.push(PubFeatures.SMOOTH_SCROLL_STYLE);
   }
+  // 앱 알림 설정 버튼이 하나라도 있으면 공용 함수를 한 번만 출력한다.
+  if (hasAppNotify) tailExtras.push(PubFeatures.buildAppNotifyScript());
   if (!stickyOn && anchorOffsetEnabled?.checked) {
     tailExtras.push(
       PubFeatures.buildAnchorOffsetScript(Number(anchorOffsetInput.value) || 0),
