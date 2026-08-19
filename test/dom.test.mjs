@@ -354,6 +354,14 @@ check(
   "다른 타입 필드는 숨김",
   configRow.querySelector(".booking-fields").classList.contains("hidden"),
 );
+check(
+  "앱 알림 설정 요소 타입 존재",
+  Array.from(configRow.querySelector(".button-type").options).some(
+    (option) =>
+      option.value === "appNotification" &&
+      option.textContent.trim() === "앱 알림 설정",
+  ),
+);
 
 // 삭제 시 남은 행의 설정이 보존되는지 확인
 tourRow.querySelector(".add-anchor-btn").click();
@@ -590,6 +598,28 @@ check("앵커 링크 출력", tourOut.includes('href="#top"'));
 check(
   "앵커 사용 시 smooth scroll 스타일",
   tourOut.includes("scroll-behavior: smooth"),
+);
+
+setValue(
+  configRow.querySelector(".button-type"),
+  "appNotification",
+  "change",
+);
+$("#generate-btn").click();
+tourOut = $("#code-output").value;
+check(
+  "앱 알림 설정 onclick 출력",
+  tourOut.includes('href="javascript:void(0)"') &&
+    tourOut.includes('onclick="try { var agent = navigator.userAgent.toLowerCase();') &&
+    tourOut.includes("agent.indexOf('tourvis_') > -1") &&
+    tourOut.includes("typeof getCookie === 'function'") &&
+    tourOut.includes("getCookie('custId')") &&
+    tourOut.includes("tourvis://Preference?memberNo=") &&
+    tourOut.includes("typeof webkit !== 'undefined'") &&
+    tourOut.includes("webkit.messageHandlers.observe.postMessage") &&
+    tourOut.includes("catch (e) {}") &&
+    tourOut.includes("window.location ="),
+  tourOut.match(/<a[^>]+>앱 알림 설정<\/a>/)?.[0],
 );
 
 section("투어비스 — 탭 스크롤 세트 (섹션 = 이미지)");
