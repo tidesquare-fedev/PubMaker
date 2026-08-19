@@ -430,66 +430,52 @@ tourRow.dataset.buttons = JSON.stringify([
 ]);
 setValue(anRow.querySelector(".appnotify-install"), "https://abr.ge/uysf2c");
 
-// 모바일 — href 에 설치 링크를 두고, 앱 안일 때만 스크립트가 끼어든다.
-document.getElementById("platform-mo").checked = true;
-fire($("#platform-mo"), "change");
-$("#generate-btn").click();
-let anOut = $("#code-output").value;
-check(
-  "모바일: href 가 앱 설치 링크",
-  anOut.includes('href="https://abr.ge/uysf2c"'),
-  anOut.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
-);
-check(
-  "모바일: onclick 이 pubAppNotify 결과를 반환",
-  anOut.includes('onclick="return pubAppNotify();"'),
-  anOut.match(/onclick="[^"]*"/)?.[0],
-);
-check(
-  "모바일: 공용 스크립트가 한 번만 출력된다",
-  (anOut.match(/function pubAppNotify/g) || []).length === 1,
-);
-check(
-  "회원번호 쿠키는 스크립트에 고정",
-  anOut.includes(`readCookie('custId')`),
-);
-// 앱이 아니면 true 를 돌려 href(설치 링크)로 진행한다.
-check("앱이 아니면 href 로 진행", anOut.includes("if (!isApp) return true;"));
+// 항공권 예약과 같은 방식 — 약속된 함수 호출만 넘기고 동작은 프런트가 구현한다.
+// 플랫폼에 따라 달라지지 않으며 별도 스크립트도 붙지 않는다.
+["mo", "pc"].forEach((platform) => {
+  document.getElementById(`platform-${platform}`).checked = true;
+  fire($(`#platform-${platform}`), "change");
+  $("#generate-btn").click();
+  const anOut = $("#code-output").value;
+  check(
+    `${platform}: href 가 appAlarmSetting 호출`,
+    anOut.includes(
+      `href="javascript:appAlarmSetting('https://abr.ge/uysf2c');"`,
+    ),
+    anOut.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
+  );
+  check(
+    `${platform}: 생성기가 스크립트를 만들지 않는다`,
+    !anOut.includes("pubAppNotify") && !anOut.includes("tourvis_"),
+  );
+  check(`${platform}: onclick 을 쓰지 않는다`, !anOut.includes("onclick"));
+});
 
-// PC — 앱이 열릴 수 없으므로 단순 링크로 끝나고 스크립트가 붙지 않는다.
-document.getElementById("platform-pc").checked = true;
-fire($("#platform-pc"), "change");
-$("#generate-btn").click();
-anOut = $("#code-output").value;
-check(
-  "PC: 설치 링크로 가는 단순 링크",
-  anOut.includes('href="https://abr.ge/uysf2c" target="_blank"'),
-  anOut.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
+// URL 의 & 와 ' 가 속성·JS 문자열 양쪽에서 깨지지 않아야 한다.
+setValue(
+  anRow.querySelector(".appnotify-install"),
+  "https://abr.ge/x?a=1&b=it's",
 );
-check("PC: onclick 없음", !anOut.includes("pubAppNotify"));
-check("PC: UA 판별 코드 없음", !anOut.includes("tourvis_"));
+$("#generate-btn").click();
+check(
+  "URL 이스케이프",
+  // & 는 속성용으로 &amp;, ' 는 JS 문자열용으로 \' 가 되어야 한다.
+  $("#code-output").value.includes("a=1&amp;b=") &&
+    $("#code-output").value.includes(String.raw`b=it\'s`),
+  $("#code-output").value.match(/href="javascript:appAlarmSetting[^"]*"/)?.[0],
+);
 
-// 설치 링크를 비우면 href 가 빈 문자열이 되지 않도록 막는다.
+// 링크를 비워도 호출 형태는 유지된다 (인자만 빈 문자열).
 setValue(anRow.querySelector(".appnotify-install"), "");
-document.getElementById("platform-mo").checked = true;
-fire($("#platform-mo"), "change");
 $("#generate-btn").click();
 check(
-  "링크를 비우면 href 는 javascript:void(0)",
-  $("#code-output").value.includes(
-    'href="javascript:void(0)" onclick="return pubAppNotify();"',
-  ),
-  $("#code-output").value.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
+  "링크를 비우면 빈 인자",
+  $("#code-output").value.includes(`href="javascript:appAlarmSetting('');"`),
+  $("#code-output").value.match(/href="javascript:appAlarmSetting[^"]*"/)?.[0],
 );
 
-// 앱 알림 버튼이 없으면 스크립트도 나오지 않아야 한다.
 setValue(anRow.querySelector(".button-type"), "link", "change");
 setValue(anRow.querySelector(".link-url"), "https://example.com");
-$("#generate-btn").click();
-check(
-  "앱 알림 요소가 없으면 스크립트도 없다",
-  !$("#code-output").value.includes("pubAppNotify"),
-);
 document.getElementById("platform-pc").checked = true;
 fire($("#platform-pc"), "change");
 

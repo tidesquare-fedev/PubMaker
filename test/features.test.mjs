@@ -181,40 +181,14 @@ try {
 }
 
 section("앱 알림 설정");
-const notify = PubFeatures.buildAppNotifyScript();
-try {
-  new Function(stripTags(notify));
-  check("앱 알림 스크립트 문법", true);
-} catch (e) {
-  check("앱 알림 스크립트 문법", false, e.message);
-}
-// 사내 하이브리드 앱 가이드의 스킴과 정확히 일치해야 한다.
-check("투어비스 스킴", notify.includes("'tourvis://Preference?memberNo='"));
-check("투어비스 UA 식별자", notify.includes("'tourvis_'"));
-check("회원번호 쿠키 고정", notify.includes("readCookie('custId')"));
-// 프리비아는 생성기 대상이 아니다.
-check("프리비아 스킴은 없다", !notify.includes("priviatravel://"));
+// 동작은 프런트가 구현하기로 한 약속이라 생성기는 스크립트를 만들지 않는다.
 check(
-  "iOS 는 webkit 핸들러로 전달",
-  notify.includes("webkit.messageHandlers.observe.postMessage"),
-);
-check(
-  "안드로이드는 window.location 이동",
-  notify.includes("window.location ="),
-);
-check(
-  "webkit 핸들러가 없으면 건너뛴다 (스크립트 오류 방지)",
-  notify.includes("window.webkit && webkit.messageHandlers"),
-);
-// 버튼 href 에 앱 설치 링크가 들어 있어, 앱이 아니면 그리로 가도록 true 를 돌린다.
-check("앱이 아니면 href 로 진행", notify.includes("if (!isApp) return true;"));
-check("앱 안에서 처리하면 href 이동 차단", notify.includes("return false;"));
-check(
-  "페이지의 getCookie 를 우선 사용",
-  notify.includes("typeof getCookie === 'function'"),
+  "스크립트 생성 함수를 두지 않는다",
+  typeof PubFeatures.buildAppNotifyScript === "undefined",
 );
 
-// 인라인 onclick 안에 들어가므로 따옴표·역슬래시·줄바꿈이 깨지면 안 된다.
+// href="javascript:appAlarmSetting('…')" 안에 들어가므로 따옴표·역슬래시·줄바꿈이
+// 깨지면 안 된다.
 check(
   "jsString: 작은따옴표 이스케이프",
   PubFeatures.jsString(`it's`) === `it\\'s`,
