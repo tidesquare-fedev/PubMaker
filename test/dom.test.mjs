@@ -393,13 +393,14 @@ check(
     anRow.querySelector(".booking-fields").classList.contains("hidden") &&
     anRow.querySelector(".video-fields").classList.contains("hidden"),
 );
-// 회원번호 쿠키(custId)와 브랜드는 고정이라 입력받지 않는다.
+// 회원번호 쿠키(custId)는 고정이고, 버튼마다 다른 값은 설치 링크뿐이다.
 check("쿠키 이름 입력칸은 없다", !anRow.querySelector(".appnotify-cookie"));
 check("브랜드 선택은 없다", !anRow.querySelector(".appnotify-brand"));
+check("안내 문구 입력칸은 없다", !anRow.querySelector(".appnotify-message"));
 check(
-  "입력은 안내 문구 하나뿐",
+  "입력은 앱 설치 링크 하나뿐",
   anRow.querySelectorAll(".appnotify-fields input").length === 1 &&
-    !!anRow.querySelector(".appnotify-message"),
+    !!anRow.querySelector(".appnotify-install"),
 );
 check(
   "요소 제목에 종류 표시",
@@ -421,37 +422,60 @@ tourRow.dataset.buttons = JSON.stringify([
     },
   },
 ]);
-setValue(anRow.querySelector(".appnotify-message"), "앱에서 이용해 주세요");
+setValue(anRow.querySelector(".appnotify-install"), "https://abr.ge/uysf2c");
+
+// 모바일 — href 에 설치 링크를 두고, 앱 안일 때만 스크립트가 끼어든다.
+document.getElementById("platform-mo").checked = true;
+fire($("#platform-mo"), "change");
 $("#generate-btn").click();
 let anOut = $("#code-output").value;
 check(
-  "오버레이가 pubAppNotify 를 호출한다",
-  anOut.includes(
-    `onclick="pubAppNotify('앱에서 이용해 주세요'); return false;"`,
-  ),
+  "모바일: href 가 앱 설치 링크",
+  anOut.includes('href="https://abr.ge/uysf2c"'),
+  anOut.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
+);
+check(
+  "모바일: onclick 이 pubAppNotify 결과를 반환",
+  anOut.includes('onclick="return pubAppNotify();"'),
   anOut.match(/onclick="[^"]*"/)?.[0],
+);
+check(
+  "모바일: 공용 스크립트가 한 번만 출력된다",
+  (anOut.match(/function pubAppNotify/g) || []).length === 1,
 );
 check(
   "회원번호 쿠키는 스크립트에 고정",
   anOut.includes(`readCookie('custId')`),
 );
-check(
-  "href 는 javascript:void(0)",
-  anOut.includes('href="javascript:void(0)"'),
-);
-check(
-  "공용 스크립트가 한 번만 출력된다",
-  (anOut.match(/function pubAppNotify/g) || []).length === 1,
-);
+// 앱이 아니면 true 를 돌려 href(설치 링크)로 진행한다.
+check("앱이 아니면 href 로 진행", anOut.includes("if (!isApp) return true;"));
 
-// 안내 문구를 비우면 빈 인자로 나가고, 그때는 아무 동작도 하지 않는다.
-setValue(anRow.querySelector(".appnotify-message"), "");
+// PC — 앱이 열릴 수 없으므로 단순 링크로 끝나고 스크립트가 붙지 않는다.
+document.getElementById("platform-pc").checked = true;
+fire($("#platform-pc"), "change");
+$("#generate-btn").click();
+anOut = $("#code-output").value;
+check(
+  "PC: 설치 링크로 가는 단순 링크",
+  anOut.includes('href="https://abr.ge/uysf2c" target="_blank"'),
+  anOut.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
+);
+check("PC: onclick 없음", !anOut.includes("pubAppNotify"));
+check("PC: UA 판별 코드 없음", !anOut.includes("tourvis_"));
+
+// 설치 링크를 비우면 href 가 빈 문자열이 되지 않도록 막는다.
+setValue(anRow.querySelector(".appnotify-install"), "");
+document.getElementById("platform-mo").checked = true;
+fire($("#platform-mo"), "change");
 $("#generate-btn").click();
 check(
-  "안내 문구를 비우면 빈 인자",
-  $("#code-output").value.includes(`onclick="pubAppNotify(''); return false;"`),
-  $("#code-output").value.match(/onclick="[^"]*"/)?.[0],
+  "링크를 비우면 href 는 javascript:void(0)",
+  $("#code-output").value.includes(
+    'href="javascript:void(0)" onclick="return pubAppNotify();"',
+  ),
+  $("#code-output").value.match(/<a data-map-anchor[^>]*앱 알림/)?.[0],
 );
+
 // 앱 알림 버튼이 없으면 스크립트도 나오지 않아야 한다.
 setValue(anRow.querySelector(".button-type"), "link", "change");
 setValue(anRow.querySelector(".link-url"), "https://example.com");
@@ -460,6 +484,8 @@ check(
   "앱 알림 요소가 없으면 스크립트도 없다",
   !$("#code-output").value.includes("pubAppNotify"),
 );
+document.getElementById("platform-pc").checked = true;
+fire($("#platform-pc"), "change");
 
 // 영역 설정 버튼 상태 — 추가 직후 미설정 → '적용' 후 완료
 section("투어비스 — 영역 설정 상태 표시");

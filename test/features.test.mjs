@@ -206,6 +206,9 @@ check(
   "webkit 핸들러가 없으면 건너뛴다 (스크립트 오류 방지)",
   notify.includes("window.webkit && webkit.messageHandlers"),
 );
+// 버튼 href 에 앱 설치 링크가 들어 있어, 앱이 아니면 그리로 가도록 true 를 돌린다.
+check("앱이 아니면 href 로 진행", notify.includes("if (!isApp) return true;"));
+check("앱 안에서 처리하면 href 이동 차단", notify.includes("return false;"));
 check(
   "페이지의 getCookie 를 우선 사용",
   notify.includes("typeof getCookie === 'function'"),
