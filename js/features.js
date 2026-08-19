@@ -315,7 +315,7 @@ function pubAppNotify() {
      무시하고 화면 끝까지 퍼진다. 좌표는 스크립트가 고정 직전의 실제 위치를 재서 넣는다. */
   .tab-box.fix { position: fixed !important; top: 0; z-index: 10; box-sizing: border-box; }
   .tab-box ul.on-off { display: flex; justify-content: space-between; width: 100%; margin: 0; padding: 0; list-style: none; box-sizing: border-box; }
-  .tab-box ul.on-off li a { display: block; }
+  .tab-box ul.on-off li a { display: block; cursor: pointer; }
   .tab-box img { display: block; width: 100%; border: 0; }
 </style>`;
   }
@@ -744,7 +744,7 @@ ${indent}</div>`;
   .tab-switch .tab-mn { height: 50px; }
   .tab-switch .tab-mn ul { display: flex; align-items: center; justify-content: space-around; height: 100%; margin: 0; padding: 0; list-style: none; overflow: hidden; }
   .tab-switch .tab-mn li { width: 100%; height: 100%; text-align: center; }
-  .tab-switch .tab-mn li a { display: flex; width: 100%; height: 100%; justify-content: center; align-items: center; font-size: 18px; color: #000; font-weight: 400; letter-spacing: -0.02em; text-decoration: none; }
+  .tab-switch .tab-mn li a { display: flex; cursor: pointer; width: 100%; height: 100%; justify-content: center; align-items: center; font-size: 18px; color: #000; font-weight: 400; letter-spacing: -0.02em; text-decoration: none; }
   .tab-switch .tab-mn li.on a { font-weight: 700; }
   .tab-switch .tabCont { display: none; }
   .tab-switch .tabCont.on { display: block; }

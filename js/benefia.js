@@ -803,7 +803,8 @@ function initializeBenefiaTab() {
         .filter((area) => area.type !== "video")
         .map((area) => {
           const r = toPctRect(area, nW, nH);
-          const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px;`;
+          // 누를 수 있는 요소이므로 손 커서를 준다 (섹션 마커는 <a> 가 아니라 제외).
+          const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px; cursor: pointer;`;
           if (area.type === "coupon" && area.couponIds) {
             const ids = area.couponIds
               .split(",")
@@ -853,7 +854,7 @@ function initializeBenefiaTab() {
       return `  <div class="content">
     <div style="text-align: center;">
       <div style="position:relative; max-width: 1180px; margin: 0 auto;">
-        <img src="${item.url}" style="border:0; max-width: 100%; display:block;">${
+        <img src="${item.url}" style="border:0; max-width: 100%; width:100%; display:block;">${
           inner ? "\n" + inner : ""
         }
       </div>
