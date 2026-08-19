@@ -827,7 +827,8 @@ function initializeSktTab() {
         .filter((area) => area.type !== "video")
         .map((area) => {
           const r = toPctRect(area, nW, nH);
-          const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px; ${overlayStyleExtras}`;
+          // 누를 수 있는 요소이므로 손 커서를 준다 (섹션 마커는 <a> 가 아니라 제외).
+          const style = `position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%; text-indent: -9999px; cursor: pointer; ${overlayStyleExtras}`;
           if (area.type === "tab") {
             hasAnchorLink = true;
             return `    <a class="tab_item_admin skt-anchor-link" href="#${

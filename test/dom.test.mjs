@@ -153,6 +153,9 @@ check(
 );
 check("유튜브 iframe 은 사라짐", !out.includes("youtube.com/embed"));
 
+// 뒤쪽 '클릭 영역 커서' 절에서 쓸 스냅샷. 그 시점에는 앵커만 남아 확인이 안 된다.
+$("#add-benefia-area-link").click();
+
 section("베네피아 — 탭 스크롤 세트");
 setValue($("#benefia-tabscroll-count"), "3");
 $("#add-benefia-tabscroll").click();
@@ -171,6 +174,8 @@ check("탭 링크 3×3 = 9개 생성", linkCount === 9, `got ${linkCount}`);
   check(`#${id} 링크가 섹션마다 1개씩 (3개)`, n === 3, `got ${n}`);
 });
 check("smooth scroll 스타일 포함", out.includes("scroll-behavior: smooth"));
+// 링크(누름)와 앵커(제외)가 모두 들어 있는 시점 — 커서 절에서 쓴다.
+const benefiaCursorOut = out;
 
 section("베네피아 — 앵커 보정 스크립트 옵션");
 setChecked($("#benefia-anchor-offset-enabled"), true);
@@ -203,6 +208,7 @@ check("탭바 마크업 출력", out.includes('class="tab-box"'), out.slice(0, 4
 check("첫 탭 활성 이미지 자동 유추", out.includes("tab01_on.jpg"));
 check("tab-area 래핑", out.includes('class="tab-area"'));
 check("스티키 스크립트 포함", out.includes("classList.add('fix')"));
+const stickyCssOut = out; // 커서 절에서 탭바 CSS 확인용
 
 // fixed 는 뷰포트 기준이라 CSS 로 left/right:0 을 주면 컨테이너 padding/margin 을 무시한다.
 // 좌표는 스크립트가 고정 직전의 실제 위치를 재서 넣어야 한다.
@@ -1052,6 +1058,109 @@ $("#generate-btn").click();
 tsOut = $("#code-output").value;
 check("동시 사용 시 콘텐츠 전환이 우선", tsOut.includes('class="tab-switch'));
 check("스티키 탭바는 출력되지 않음", !tsOut.includes('class="tab-box"'));
+
+section("이미지 폭과 오버레이 정렬");
+// 오버레이 % 는 래퍼 기준인데 이미지가 래퍼보다 좁으면 클릭 영역이 어긋난다.
+// 이미지에 width:100% 를 줘서 래퍼 폭 == 이미지 폭 이 되도록 맞춘다.
+[
+  ["투어비스", $("#code-output").value],
+  ["베네피아", benefiaCursorOut],
+  ["SKT", $("#skt-code-output").value],
+].forEach(([name, html]) => {
+  const imgs = (html.match(/<img [^>]*>/g) || []).filter(
+    (t) => !t.includes("tab01") && !t.includes("tab02"),
+  );
+  // max-width: 100% 안의 'width: 100%' 에 걸리지 않도록 앞 경계를 본다.
+  const hasWidth = (t) => /(^|[;"'\s])width:\s*100%/.test(t);
+  check(
+    `${name}: 본문 이미지에 width 100%`,
+    imgs.length > 0 && imgs.every(hasWidth),
+    imgs.filter((t) => !hasWidth(t))[0] || `${imgs.length}개 확인`,
+  );
+});
+
+section("클릭 영역 커서");
+// 투명 오버레이라 링크처럼 보이지 않으므로 cursor: pointer 로 눌린다는 것을 알린다.
+// 앞선 절에서 요소를 비웠고 초기화도 거쳤으므로 행을 다시 조회해 링크를 하나 만든다.
+const curImgRow = $("#image-list .image-row");
+setValue(
+  curImgRow.querySelector(".image-url"),
+  "https://cdn.example.com/c.jpg",
+);
+curImgRow.querySelector(".buttons-container").innerHTML = "";
+curImgRow.querySelector(".add-new-button-btn").click();
+const curRow = curImgRow.querySelector(".button-config-row");
+setValue(curRow.querySelector(".button-type"), "link", "change");
+setValue(curRow.querySelector(".link-url"), "https://example.com");
+curImgRow.querySelector(".add-anchor-btn").click();
+const coords = (bottom) => ({
+  coords: {
+    left: "10.00",
+    bottom,
+    top: "70.00",
+    width: "80.00",
+    height: "10.00",
+    nW: 800,
+    nH: 2000,
+  },
+});
+curImgRow.dataset.buttons = JSON.stringify([coords("20.00"), coords("40.00")]);
+$("#generate-btn").click();
+
+// SKT 는 이 시점에 앵커만 남아 있어 누르는 요소를 하나 만든다.
+// (베네피아는 뒤로 갈수록 상태가 얽혀 앞쪽에서 잡아 둔 스냅샷을 쓴다.)
+$("#add-skt-area-link").click();
+$("#generate-skt-code").click();
+
+// 이미지 위에 얹는 투명 오버레이만 본다. 탭바 링크는 CSS 로 커서를 받는다.
+const overlays = (html) =>
+  (html.match(/<a [^>]*>/g) || []).filter((t) =>
+    t.includes("position: absolute"),
+  );
+// 앵커 이동도 누르는 요소라 커서가 바뀐다. 실제로 섞여 있는지 따로 센다.
+const isAnchorJump = (tag) =>
+  /href="#[^"]/.test(tag) && !tag.includes("tab_item_admin");
+
+[
+  ["투어비스", $("#code-output").value],
+  ["베네피아", benefiaCursorOut],
+  ["SKT", $("#skt-code-output").value],
+].forEach(([name, html]) => {
+  const tags = overlays(html);
+  check(
+    `${name}: 클릭 오버레이에 cursor: pointer`,
+    tags.length > 0 && tags.every((t) => t.includes("cursor: pointer")),
+    tags.filter((t) => !t.includes("cursor: pointer"))[0] ||
+      `${tags.length}개 확인`,
+  );
+  // 앵커가 섞여 있지 않으면 위 검증이 헐거워지므로 존재도 함께 확인한다.
+  const anchors = tags.filter(isAnchorJump);
+  check(
+    `${name}: 앵커 이동에도 커서 적용`,
+    anchors.length > 0 && anchors.every((t) => t.includes("cursor: pointer")),
+    `${anchors.length}개 확인`,
+  );
+  // 섹션 시작점은 클릭 대상이 아니므로 커서를 바꾸지 않는다.
+  const markers = html.match(/<div class="section"[^>]*>/g) || [];
+  check(
+    `${name}: 섹션 시작점에는 커서 없음`,
+    markers.every((m) => !m.includes("cursor")),
+    markers[0],
+  );
+});
+// 탭바 링크도 이미지라 커서가 바뀌어야 한다.
+check(
+  "스티키 탭바 링크 커서",
+  stickyCssOut.includes(
+    ".tab-box ul.on-off li a { display: block; cursor: pointer; }",
+  ),
+);
+check(
+  "탭 콘텐츠 전환 탭 커서",
+  $("#code-output").value.includes(
+    ".tab-switch .tab-mn li a { display: flex; cursor: pointer;",
+  ),
+);
 
 section("런타임 오류");
 check(

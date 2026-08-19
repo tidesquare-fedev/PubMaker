@@ -920,7 +920,9 @@ function buildOverlayTag(configRow, btn, platform, hasSidePadding) {
           2,
         );
   const x = toWrapperX(c, hasSidePadding);
-  const style = `position: absolute; bottom: ${c.bottom}%; left: ${x.left}%; width: ${x.width}%; height: ${c.height}%; text-indent: -9999px; font-size: 0`;
+  // 누를 수 있는 요소이므로 손 커서를 준다.
+  // 섹션 시작점은 이 style 을 쓰지 않고 buildSectionMarker 로 나가므로 자동 제외된다.
+  const style = `position: absolute; bottom: ${c.bottom}%; left: ${x.left}%; width: ${x.width}%; height: ${c.height}%; text-indent: -9999px; font-size: 0; cursor: pointer`;
 
   if (type === "booking") {
     const airlineCode = configRow.querySelector(".airline-code").value;
