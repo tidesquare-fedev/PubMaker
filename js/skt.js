@@ -170,7 +170,7 @@ function initializeSktTab() {
                         const left = Math.round(a.x);
                         const top = Math.round(a.y);
                         // 코드에는 가로 전체 폭 섹션으로 나가므로 가이드 라인도 함께 표시
-                        return `<div class="skt-section-line" style="top:${top}px"></div><div class="skt-anchor-pin" data-anchor-id="${a.id}" style="left:${left}px; top:${top}px" title="${a.id}"></div>`;
+                        return `<div class="skt-section-line" data-anchor-line="${a.id}" style="top:${top}px"></div><div class="skt-anchor-pin" data-anchor-id="${a.id}" style="left:${left}px; top:${top}px" title="${a.id}"></div>`;
                       })
                       .join("")}
                 </div>
@@ -429,6 +429,13 @@ function initializeSktTab() {
           if (pin) {
             pin.style.left = `${newLeft}px`;
             pin.style.top = `${newTop}px`;
+          }
+          // 가이드 라인도 핀과 같은 높이로 따라오게 갱신
+          const line = container.querySelector(
+            `[data-anchor-line="${draggingAreaId}"]`,
+          );
+          if (line) {
+            line.style.top = `${newTop}px`;
           }
           e.preventDefault();
           return;
